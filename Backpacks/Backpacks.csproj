@@ -115,7 +115,7 @@
     </ItemGroup>
     <ItemGroup>
         <EmbeddedResource Include="translations\English.yml"/>
-        <EmbeddedResource Include="assets\bp_bundle"/>
+        <EmbeddedResource Include="assets\bp_explorer"/>
         <Content Include="ILRepack.targets"/>
         <Content Include="Libs\ItemDataManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>

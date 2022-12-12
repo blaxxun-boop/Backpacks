@@ -13,7 +13,7 @@ namespace Backpacks;
 public class Backpacks : BaseUnityPlugin
 {
 	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.0.0";
+	private const string ModVersion = "1.0.1";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -22,6 +22,9 @@ public class Backpacks : BaseUnityPlugin
 	public static ConfigEntry<Toggle> preventInventoryClosing = null!;
 	public static ConfigEntry<int> backpackRows = null!;
 	public static ConfigEntry<int> backpackColumns = null!;
+	public static ConfigEntry<Toggle> backpackWeight = null!;
+	public static ConfigEntry<Toggle> preventTeleportation = null!;
+	public static ConfigEntry<Toggle> backpackCeption = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -44,18 +47,21 @@ public class Backpacks : BaseUnityPlugin
 	public void Awake()
 	{
 		Localizer.Load();
-		
+
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
 		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, "If on, pressing the interact key will not close the inventory.", false);
 		backpackRows = config("2 - Backpack", "Backpack Slot Rows", 3, new ConfigDescription("Rows in a Backpack. Changing this value does not affect existing Backpacks.", new AcceptableValueRange<int>(1, 4)));
 		backpackColumns = config("2 - Backpack", "Backpack Slot Columns", 5, new ConfigDescription("Columns in a Backpack. Changing this value does not affect existing Backpacks.", new AcceptableValueRange<int>(1, 8)));
+		backpackWeight = config("2 - Backpack", "Backpack Weight", Toggle.On, new ConfigDescription("If off, backpacks do not have a weight."));
+		preventTeleportation = config("2 - Backpack", "Backpack Teleportation Check", Toggle.On, new ConfigDescription("If off, portals do not check the content of a backpack upon teleportation."));
+		backpackCeption = config("2 - Backpack", "Backpacks in Backpacks", Toggle.Off, new ConfigDescription("If on, you can put backpacks into backpacks."));
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
 		harmony.PatchAll(assembly);
 
-		Item backpack = new("bp_bundle", "bp_explorer");
+		Item backpack = new("bp_explorer", "bp_explorer");
 		backpack.Crafting.Add(CraftingTable.Workbench, 2);
 		backpack.RequiredItems.Add("BronzeNails", 5);
 		backpack.RequiredItems.Add("DeerHide", 10);

@@ -11,7 +11,7 @@ namespace Backpacks;
 
 internal static class CustomContainer
 {
-	public static ItemContainer? OpenContainer;
+	private static ItemContainer? OpenContainer;
 
 	private static void SaveItemContainer()
 	{
@@ -31,7 +31,8 @@ internal static class CustomContainer
 		{
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnTakeAll)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnSelectedItem)),
-			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.IsContainerOpen))
+			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.IsContainerOpen)),
+			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.UpdateContainerWeight))
 		};
 
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructionsList, ILGenerator ilg)
@@ -39,6 +40,7 @@ internal static class CustomContainer
 			MethodInfo containerInventory = AccessTools.DeclaredMethod(typeof(Container), nameof(Container.GetInventory));
 			FieldInfo containerField = AccessTools.DeclaredField(typeof(InventoryGui), nameof(InventoryGui.m_currentContainer));
 			MethodInfo objectInequality = AccessTools.DeclaredMethod(typeof(Object), "op_Inequality");
+			MethodInfo objectEquality = AccessTools.DeclaredMethod(typeof(Object), "op_Equality");
 			MethodInfo objectImplicit = AccessTools.DeclaredMethod(typeof(Object), "op_Implicit");
 			List<CodeInstruction> instructions = instructionsList.ToList();
 			for (int i = 0; i < instructions.Count; ++i)
@@ -64,6 +66,13 @@ internal static class CustomContainer
 					yield return instruction;
 					yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(AddFakeItemContainer), nameof(IsOpenInventory)));
 					yield return new CodeInstruction(OpCodes.Or);
+				}
+				else if (instruction.opcode == OpCodes.Call && instruction.OperandIs(objectEquality) && instructions[i - 2].opcode == OpCodes.Ldfld && instructions[i - 2].OperandIs(containerField))
+				{
+					yield return instruction;
+					yield return new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(AddFakeItemContainer), nameof(IsOpenInventory)));
+					yield return new CodeInstruction(OpCodes.Not);
+					yield return new CodeInstruction(OpCodes.And);
 				}
 				else
 				{
@@ -103,7 +112,7 @@ internal static class CustomContainer
 	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.UpdateContainer))]
 	public class OpenFakeItemsContainer
 	{
-		public static bool Open(InventoryGui invGui, ItemDrop.ItemData? item)
+		private static bool Open(InventoryGui invGui, ItemDrop.ItemData? item)
 		{
 			ItemInfo? itemInfo = item?.Data();
 
@@ -218,11 +227,155 @@ internal static class CustomContainer
 		}
 	}
 
+	[HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.DropItem))]
+	private class RestrictItemContainerItems
+	{
+		private static bool Prefix(InventoryGrid __instance, Inventory fromInventory, ItemDrop.ItemData item, ref int amount, Vector2i pos, ref bool __result)
+		{
+			if (__instance.m_inventory != OpenContainer?.Inventory)
+			{
+				if (fromInventory == OpenContainer?.Inventory)
+				{
+					if (!OpenContainer.CanRemoveItem(item))
+					{
+						__result = false;
+						return false;
+					}
+
+					ItemDrop.ItemData existingItem = __instance.m_inventory.GetItemAt(pos.x, pos.y);
+
+					if (existingItem is not null && existingItem != item)
+					{
+						if (!OpenContainer.CanAddItem(existingItem))
+						{
+							__result = false;
+							return false;
+						}
+
+						if (!OpenContainer.AllowStacking() && existingItem.m_stack > 1)
+						{
+							Vector2i emptySlot = __instance.m_inventory.FindEmptySlot(false);
+							if (!__instance.m_inventory.AddItem(existingItem, existingItem.m_stack - 1, emptySlot.x, emptySlot.y))
+							{
+								__result = false;
+								return false;
+							}
+						}
+					}
+
+					if (!OpenContainer.RemoveItem(item))
+					{
+						__result = false;
+						return false;
+					}
+				}
+
+				return true;
+			}
+
+			ItemDrop.ItemData? oldItem = __instance.m_inventory.GetItemAt(pos.x, pos.y);
+			if (oldItem == item)
+			{
+				return true;
+			}
+
+			if (oldItem is not null && fromInventory != __instance.GetInventory() && !OpenContainer.CanRemoveItem(oldItem))
+			{
+				__result = false;
+				return false;
+			}
+
+			if (!OpenContainer.CanAddItem(item))
+			{
+				__result = false;
+				return false;
+			}
+
+			if (oldItem is not null && fromInventory != __instance.GetInventory())
+			{
+				OpenContainer.RemoveItem(oldItem);
+			}
+
+			if (!OpenContainer.AllowStacking() && amount > 1)
+			{
+				Vector2i emptySlot = fromInventory.FindEmptySlot(false);
+				fromInventory.AddItem(item, item.m_stack - 1, emptySlot.x, emptySlot.y);
+				amount = 1;
+			}
+
+			return true;
+		}
+	}
+
+	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.OnSelectedItem))]
+	private class RestrictMovingItems
+	{
+		private static bool Prefix(InventoryGrid grid, ref ItemDrop.ItemData? item, InventoryGrid.Modifier mod)
+		{
+			if (item is not null && mod == InventoryGrid.Modifier.Move && OpenContainer?.Inventory == grid.m_inventory)
+			{
+				// Moving outside of container, into inventory
+				if (!OpenContainer.CanRemoveItem(item))
+				{
+					return false;
+				}
+
+				if (!OpenContainer.RemoveItem(item))
+				{
+					grid.m_inventory.RemoveItem(item);
+					item = null;
+				}
+			}
+			else if (item is not null && mod == InventoryGrid.Modifier.Move && OpenContainer?.Inventory is { } inventory && inventory != grid.m_inventory)
+			{
+				// Moving into container
+				if (!OpenContainer.CanAddItem(item))
+				{
+					return false;
+				}
+
+				if (!OpenContainer.AllowStacking() && item.m_stack > 1)
+				{
+					Vector2i emptySlot = grid.m_inventory.FindEmptySlot(false);
+					return grid.m_inventory.AddItem(item, item.m_stack - 1, emptySlot.x, emptySlot.y);
+				}
+			}
+			return true;
+		}
+	}
+
+	[HarmonyPatch(typeof(Humanoid), nameof(Humanoid.DropItem))]
+	private static class RestrictThrowingItemContainerItemsOnGround
+	{
+		private static bool Prefix(ref bool __result, Inventory inventory, ItemDrop.ItemData item)
+		{
+			if (inventory == OpenContainer?.Inventory && (!OpenContainer.CanRemoveItem(item) || !OpenContainer.RemoveItem(item)))
+			{
+				__result = false;
+				return false;
+			}
+
+			return true;
+		}
+	}
+
+	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.GetWeight))]
+	private static class IncreaseWeightByContainerContents
+	{
+		private static void Postfix(ItemDrop.ItemData __instance, ref float __result)
+		{
+			if (__instance.Data().Get<ItemContainer>() is { } container && !container.IgnoresWeight())
+			{
+				__result += container.Inventory.GetTotalWeight();
+			}
+		}
+	}
+
 	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Awake))]
 	private static class AddPressKeyToOpenTooltip
 	{
 		private static bool Updated = false;
-		
+
 		private static void Postfix(InventoryGui __instance)
 		{
 			if (!Updated)
