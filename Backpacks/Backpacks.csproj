@@ -34,6 +34,25 @@
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
     </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'API|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\API\</OutputPath>
+        <DefineConstants>API;TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+    </PropertyGroup>
+    <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'APIStub|AnyCPU' ">
+        <PlatformTarget>AnyCPU</PlatformTarget>
+        <DebugType>pdbonly</DebugType>
+        <Optimize>true</Optimize>
+        <OutputPath>bin\APIStub\</OutputPath>
+        <DefineConstants>TRACE</DefineConstants>
+        <ErrorReport>prompt</ErrorReport>
+        <WarningLevel>4</WarningLevel>
+        <AssemblyName>BackpacksAPI</AssemblyName>
+    </PropertyGroup>
     <Choose>
         <When Condition="($(OS) == 'Unix' OR $(OS) == 'OSX') AND $(GamePath) == ''">
             <PropertyGroup>
@@ -107,19 +126,25 @@
             <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.UIModule.dll</HintPath>
         </Reference>
     </ItemGroup>
-    <ItemGroup>
-        <Compile Include="Backpacks.cs"/>
-        <Compile Include="CustomContainer.cs"/>
-        <Compile Include="ItemContainer.cs"/>
-        <Compile Include="Properties\AssemblyInfo.cs"/>
+    <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'APIStub|AnyCPU'">
+        <Compile Include="API\AssemblyResolver.cs"/>
+        <EmbeddedResource Include="bin\API\Backpacks.dll" Link="Backpacks.dll"/>
     </ItemGroup>
-    <ItemGroup>
-        <EmbeddedResource Include="translations\English.yml"/>
-        <EmbeddedResource Include="assets\bp_explorer"/>
-        <Content Include="ILRepack.targets"/>
+    <ItemGroup Condition=" '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU' ">
+        <Compile Include="ItemContainer.cs"/>
         <Content Include="Libs\ItemDataManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
+        <Content Include="ILRepack.targets"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
+        <Compile Include="Backpacks.cs"/>
+        <Compile Include="CustomContainer.cs"/>
+        <Compile Include="Properties\AssemblyInfo.cs"/>
+    </ItemGroup>
+    <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
+        <EmbeddedResource Include="translations\English.yml"/>
+        <EmbeddedResource Include="assets\bp_explorer"/>
         <Content Include="Libs\ItemManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -148,7 +173,7 @@
     <Target Name="AfterBuild">
     </Target>
     -->
-    <Target Name="Copy" AfterTargets="ILRepack">
+    <Target Name="Copy" AfterTargets="ILRepack" Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
         <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(GamePath)\BepInEx\plugins\$(AssemblyName).dll&quot;"/>
     </Target>
 </Project>

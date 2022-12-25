@@ -1,6 +1,8 @@
-﻿using System;
+﻿#if ! API
+using System;
 using System.Reflection;
 using HarmonyLib;
+#endif
 using ItemDataManager;
 using JetBrains.Annotations;
 
@@ -10,15 +12,18 @@ namespace Backpacks;
 public class ItemContainer : ItemData
 {
 	public readonly Inventory Inventory;
+#if ! API
 	private bool hasClonedSharedData = false;
 
 	private static readonly MethodInfo MemberwiseCloneMethod = AccessTools.DeclaredMethod(typeof(object), "MemberwiseClone");
+#endif
 
 	public ItemContainer()
 	{
 		// ReSharper disable once VirtualMemberCallInConstructor
 		Vector2i dimensions = GetDefaultContainerSize();
 		Inventory = new Inventory("Items", Player.m_localPlayer?.GetInventory().m_bkg, dimensions.x, dimensions.y);
+#if ! API
 		Inventory.m_onChanged += () =>
 		{
 			if (!IgnoresTeleportable())
@@ -31,16 +36,18 @@ public class ItemContainer : ItemData
 
 				Item.m_shared.m_teleportable = Inventory.IsTeleportable();
 			}
-			if (!IgnoresWeight())
-			{
-				Player.m_localPlayer?.GetInventory().UpdateTotalWeight();
-			}
+			Player.m_localPlayer?.GetInventory().UpdateTotalWeight();
 		};
+#endif
 	}
 
 	public virtual Vector2i GetDefaultContainerSize()
 	{
+#if API
+		return new Vector2i();
+#else
 		return new Vector2i(Backpacks.backpackColumns.Value, Backpacks.backpackRows.Value);
+#endif
 	}
 
 	public virtual bool ShowTakeAllButton() => true;
@@ -51,17 +58,29 @@ public class ItemContainer : ItemData
 
 	public virtual bool IgnoresTeleportable()
 	{
+#if API
+		return false;
+#else
 		return Backpacks.preventTeleportation.Value == Backpacks.Toggle.Off;
+#endif
 	}
 
-	public virtual bool IgnoresWeight()
+	public virtual float WeightFactor()
 	{
-		return Backpacks.backpackWeight.Value == Backpacks.Toggle.Off;
+#if API
+		return 1f;
+#else
+		return Backpacks.backpackWeightFactor.Value / 100f;
+#endif
 	}
 
 	public virtual bool CanAddItem(ItemDrop.ItemData item)
 	{
+#if API
+		return false;
+#else
 		return Backpacks.backpackCeption.Value == Backpacks.Toggle.On ? item != Item : item.m_shared.m_name != "$item_explorer";
+#endif
 	}
 
 	public virtual bool CanRemoveItem(ItemDrop.ItemData item) => true;
@@ -76,13 +95,16 @@ public class ItemContainer : ItemData
 
 	public override void Save()
 	{
+#if ! API
 		ZPackage pkg = new();
 		Inventory.Save(pkg);
 		Value = $"{Inventory.m_width};{Inventory.m_height};{Convert.ToBase64String(pkg.GetArray())}";
+#endif
 	}
 
 	public override void Load()
 	{
+#if ! API
 		string[] info = Value.Split(';');
 		if (info.Length > 2 && int.TryParse(info[0], out int width) && int.TryParse(info[1], out int height))
 		{
@@ -91,5 +113,6 @@ public class ItemContainer : ItemData
 			Inventory.m_height = height;
 			Inventory.Load(new ZPackage(Convert.FromBase64String(info[2])));
 		}
+#endif
 	}
 }

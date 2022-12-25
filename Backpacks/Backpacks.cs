@@ -13,7 +13,7 @@ namespace Backpacks;
 public class Backpacks : BaseUnityPlugin
 {
 	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.0.1";
+	private const string ModVersion = "1.0.2";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -22,7 +22,7 @@ public class Backpacks : BaseUnityPlugin
 	public static ConfigEntry<Toggle> preventInventoryClosing = null!;
 	public static ConfigEntry<int> backpackRows = null!;
 	public static ConfigEntry<int> backpackColumns = null!;
-	public static ConfigEntry<Toggle> backpackWeight = null!;
+	public static ConfigEntry<int> backpackWeightFactor = null!;
 	public static ConfigEntry<Toggle> preventTeleportation = null!;
 	public static ConfigEntry<Toggle> backpackCeption = null!;
 
@@ -53,7 +53,7 @@ public class Backpacks : BaseUnityPlugin
 		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, "If on, pressing the interact key will not close the inventory.", false);
 		backpackRows = config("2 - Backpack", "Backpack Slot Rows", 3, new ConfigDescription("Rows in a Backpack. Changing this value does not affect existing Backpacks.", new AcceptableValueRange<int>(1, 4)));
 		backpackColumns = config("2 - Backpack", "Backpack Slot Columns", 5, new ConfigDescription("Columns in a Backpack. Changing this value does not affect existing Backpacks.", new AcceptableValueRange<int>(1, 8)));
-		backpackWeight = config("2 - Backpack", "Backpack Weight", Toggle.On, new ConfigDescription("If off, backpacks do not have a weight."));
+		backpackWeightFactor = config("2 - Backpack", "Backpack Weight", 100, new ConfigDescription("Weight of items inside a Backpack.", new AcceptableValueRange<int>(0, 100)));
 		preventTeleportation = config("2 - Backpack", "Backpack Teleportation Check", Toggle.On, new ConfigDescription("If off, portals do not check the content of a backpack upon teleportation."));
 		backpackCeption = config("2 - Backpack", "Backpacks in Backpacks", Toggle.Off, new ConfigDescription("If on, you can put backpacks into backpacks."));
 

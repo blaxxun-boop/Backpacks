@@ -364,9 +364,9 @@ internal static class CustomContainer
 	{
 		private static void Postfix(ItemDrop.ItemData __instance, ref float __result)
 		{
-			if (__instance.Data().Get<ItemContainer>() is { } container && !container.IgnoresWeight())
+			if (__instance.Data().Get<ItemContainer>() is { } container)
 			{
-				__result += container.Inventory.GetTotalWeight();
+				__result += container.Inventory.GetTotalWeight() * container.WeightFactor();
 			}
 		}
 	}
