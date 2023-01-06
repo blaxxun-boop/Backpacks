@@ -1,2 +1,3 @@
 item_explorer: "Explorer's Backpack"
 item_explorer_description: "A simple Backpack that can be taken on adventures."
+bp_cant_put_in_chest: "You cannot put filled backpacks into a chest."

@@ -1,4 +1,6 @@
-﻿using System.Reflection;
+﻿using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -13,7 +15,7 @@ namespace Backpacks;
 public class Backpacks : BaseUnityPlugin
 {
 	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.0.2";
+	private const string ModVersion = "1.0.3";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -25,6 +27,7 @@ public class Backpacks : BaseUnityPlugin
 	public static ConfigEntry<int> backpackWeightFactor = null!;
 	public static ConfigEntry<Toggle> preventTeleportation = null!;
 	public static ConfigEntry<Toggle> backpackCeption = null!;
+	public static ConfigEntry<Toggle> backpackChests = null!;
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -56,6 +59,7 @@ public class Backpacks : BaseUnityPlugin
 		backpackWeightFactor = config("2 - Backpack", "Backpack Weight", 100, new ConfigDescription("Weight of items inside a Backpack.", new AcceptableValueRange<int>(0, 100)));
 		preventTeleportation = config("2 - Backpack", "Backpack Teleportation Check", Toggle.On, new ConfigDescription("If off, portals do not check the content of a backpack upon teleportation."));
 		backpackCeption = config("2 - Backpack", "Backpacks in Backpacks", Toggle.Off, new ConfigDescription("If on, you can put backpacks into backpacks."));
+		backpackChests = config("2 - Backpack", "Backpacks in Chests", Toggle.Off, new ConfigDescription("If on, you can put backpacks that aren't empty into chests, to make the chests bigger on the inside."));
 
 		Assembly assembly = Assembly.GetExecutingAssembly();
 		Harmony harmony = new(ModGUID);
@@ -68,5 +72,22 @@ public class Backpacks : BaseUnityPlugin
 		backpack.RequiredItems.Add("LeatherScraps", 10);
 
 		backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
+	}
+
+	[HarmonyPatch]
+	private static class PreventBackpacksInChests
+	{
+		private static IEnumerable<MethodInfo> TargetMethods() => typeof(Inventory).GetMethods().Where(m => m.Name == nameof(Inventory.MoveItemToThis));
+
+		private static bool Prefix(Inventory __instance, ItemDrop.ItemData item)
+		{
+			if (__instance == InventoryGui.instance.m_currentContainer?.m_inventory && item.Data().Get<ItemContainer>()?.CanBePutInContainer() == false)
+			{
+				Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$bp_cant_put_in_chest"));
+				return false;
+			}
+
+			return true;
+		}
 	}
 }

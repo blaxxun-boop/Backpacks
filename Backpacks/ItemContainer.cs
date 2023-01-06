@@ -79,7 +79,7 @@ public class ItemContainer : ItemData
 #if API
 		return false;
 #else
-		return Backpacks.backpackCeption.Value == Backpacks.Toggle.On ? item != Item : item.m_shared.m_name != "$item_explorer";
+		return Backpacks.backpackCeption.Value == Backpacks.Toggle.On ? item != Item : item.m_shared.m_name != Item.m_shared.m_name;
 #endif
 	}
 
@@ -88,6 +88,8 @@ public class ItemContainer : ItemData
 	public virtual bool RemoveItem(ItemDrop.ItemData item) => true;
 
 	public virtual bool AllowStacking() => true;
+
+	public virtual bool CanBePutInContainer() => Backpacks.backpackChests.Value == Backpacks.Toggle.On || Inventory.m_inventory.Count == 0;
 
 	public virtual bool Open() => true;
 
