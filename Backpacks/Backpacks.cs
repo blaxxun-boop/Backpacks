@@ -12,10 +12,11 @@ using LocalizationManager;
 namespace Backpacks;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
+[BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
 public class Backpacks : BaseUnityPlugin
 {
 	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.0.3";
+	private const string ModVersion = "1.0.4";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
