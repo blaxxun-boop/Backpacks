@@ -137,7 +137,14 @@ public class ItemContainer : ItemData
 
 	public virtual bool AllowStacking() => true;
 
-	public virtual bool CanBePutInContainer() => Backpacks.backpackChests.Value == Backpacks.Toggle.On || Inventory.m_inventory.Count == 0;
+	public virtual bool CanBePutInContainer()
+	{
+#if API
+		return false;
+#else
+		return Backpacks.backpackChests.Value == Backpacks.Toggle.On || Inventory.m_inventory.Count == 0;
+#endif
+	}
 
 	public virtual bool Open() => true;
 

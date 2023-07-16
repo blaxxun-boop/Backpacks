@@ -10,7 +10,7 @@ namespace Backpacks;
 
 public class Visual
 {
-	private static Dictionary<Player, Visual> visuals = new();
+	private static readonly Dictionary<VisEquipment, Visual> visuals = new();
 
 	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.IsEquipable))]
 	private static class IsEquipable
@@ -23,13 +23,13 @@ public class Visual
 			}
 		}
 	}
-	
+
 	[HarmonyPatch(typeof(Humanoid), nameof(Humanoid.IsItemEquiped))]
 	private static class IsItemEquiped
 	{
 		private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result)
 		{
-			if (__instance is Player player && visuals[player].equippedBackpackItem == item)
+			if (__instance is Player player && visuals[player.m_visEquipment].equippedBackpackItem == item)
 			{
 				__result = true;
 			}
@@ -40,16 +40,28 @@ public class Visual
 	private static class AddVisual
 	{
 		[HarmonyPriority(Priority.First)]
-		private static void Postfix(Player __instance)
+		private static void Prefix(Player __instance)
 		{
-			visuals.Add(__instance, new Visual(__instance));
+			visuals.Add(__instance.GetComponent<VisEquipment>(), new Visual(__instance.GetComponent<VisEquipment>()));
 		}
 	}
 
-	[HarmonyPatch(typeof(Player), nameof(Player.OnDestroy))]
-	private static class RemoveVisual
+	[HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.OnEnable))]
+	private static class AddVisualOnEnable
 	{
-		private static void Postfix(Player __instance)
+		private static void Postfix(VisEquipment __instance)
+		{
+			if (!visuals.ContainsKey(__instance) && __instance.m_isPlayer)
+			{
+				visuals[__instance] = new Visual(__instance);
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(VisEquipment), nameof(VisEquipment.OnDisable))]
+	private static class RemoveVisualOnDisable
+	{
+		private static void Postfix(VisEquipment __instance)
 		{
 			visuals.Remove(__instance);
 		}
@@ -62,7 +74,7 @@ public class Visual
 		{
 			if (__instance is Player player)
 			{
-				Visual visual = visuals[player];
+				Visual visual = visuals[player.m_visEquipment];
 				visual.setBackpackItem(visual.equippedBackpackItem is null ? "" : visual.equippedBackpackItem.m_dropPrefab.name);
 			}
 		}
@@ -75,7 +87,7 @@ public class Visual
 		{
 			if (__instance is Player player)
 			{
-				player.UnequipItem(visuals[player].equippedBackpackItem, false);
+				player.UnequipItem(visuals[player.m_visEquipment].equippedBackpackItem, false);
 			}
 		}
 	}
@@ -87,7 +99,7 @@ public class Visual
 		{
 			if (__instance.m_isPlayer)
 			{
-				visuals[__instance.GetComponent<Player>()].updateEquipmentVisuals();
+				visuals[__instance].updateEquipmentVisuals();
 			}
 		}
 	}
@@ -99,18 +111,18 @@ public class Visual
 		{
 			if (humanoid is Player player && item.Data().Get<ItemContainer>()?.IsEquipable() == true)
 			{
-				player.UnequipItem(visuals[player].equippedBackpackItem, triggerEquipmentEffects);
-				visuals[player].equippedBackpackItem = item;
+				player.UnequipItem(visuals[player.m_visEquipment].equippedBackpackItem, triggerEquipmentEffects);
+				visuals[player.m_visEquipment].equippedBackpackItem = item;
 			}
 		}
-		
+
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructionEnumerable)
 		{
 			MethodInfo itemEquipped = AccessTools.DeclaredMethod(typeof(Humanoid), nameof(Humanoid.IsItemEquiped));
 			List<CodeInstruction> instructions = instructionEnumerable.ToList();
 			int index = instructions.FindLastIndex(instruction => instruction.Calls(itemEquipped));
 			CodeInstruction labelInstruction = instructions[index - 2];
-			instructions.InsertRange(index - 2, new []
+			instructions.InsertRange(index - 2, new[]
 			{
 				new CodeInstruction(OpCodes.Ldarg_0) { labels = labelInstruction.labels },
 				new CodeInstruction(OpCodes.Ldarg_1),
@@ -118,7 +130,7 @@ public class Visual
 				new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(EquipItem), nameof(Equip))),
 			});
 			labelInstruction.labels = new List<Label>();
-			
+
 			return instructions;
 		}
 	}
@@ -128,18 +140,18 @@ public class Visual
 	{
 		private static void Unequip(Humanoid humanoid, ItemDrop.ItemData item)
 		{
-			if (humanoid is Player player && visuals[player].equippedBackpackItem == item)
+			if (humanoid is Player player && visuals[player.m_visEquipment].equippedBackpackItem == item)
 			{
-				visuals[player].equippedBackpackItem = null;
+				visuals[player.m_visEquipment].equippedBackpackItem = null;
 			}
 		}
-		
+
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructionEnumerable)
 		{
 			MethodInfo setupEquipment = AccessTools.DeclaredMethod(typeof(Humanoid), nameof(Humanoid.SetupEquipment));
 			List<CodeInstruction> instructions = instructionEnumerable.ToList();
 			int index = instructions.FindIndex(instruction => instruction.Calls(setupEquipment));
-			instructions.InsertRange(index - 1, new []
+			instructions.InsertRange(index - 1, new[]
 			{
 				new CodeInstruction(OpCodes.Ldarg_0),
 				new CodeInstruction(OpCodes.Ldarg_1),
@@ -149,25 +161,22 @@ public class Visual
 		}
 	}
 
-	private readonly Player player;
+	private readonly VisEquipment visEquipment;
 	private ItemDrop.ItemData? equippedBackpackItem;
-	
+
 	private string backpackItem = "";
-	private readonly Transform backBackpack;
-	private GameObject? backpackItemInstance;
+	private List<GameObject> backpackItemInstances = new();
 	private int currentBackpackItemHash;
 
-	private Visual(Player player)
+	private Visual(VisEquipment visEquipment)
 	{
-		this.player = player;
-		backBackpack = Object.Instantiate(player.m_visEquipment.m_backTool, player.m_visEquipment.m_backTool.parent);
-		backBackpack.name = "backpack attach";
+		this.visEquipment = visEquipment;
 	}
 
 	private void updateEquipmentVisuals()
 	{
 		int hash;
-		if (player.m_nview.GetZDO() is { } zdo)
+		if (visEquipment.m_nview.GetZDO() is { } zdo)
 		{
 			hash = zdo.GetInt("BackpackItem");
 		}
@@ -178,7 +187,7 @@ public class Visual
 
 		if (setBackpackEquipped(hash))
 		{
-			player.m_visEquipment.UpdateLodgroup();
+			visEquipment.UpdateLodgroup();
 		}
 	}
 
@@ -188,19 +197,19 @@ public class Visual
 		{
 			return false;
 		}
-		if (backpackItemInstance)
+		foreach (GameObject backpackItemInstance in backpackItemInstances)
 		{
 			Object.Destroy(backpackItemInstance);
-			backpackItemInstance = null;
 		}
+		backpackItemInstances.Clear();
 		currentBackpackItemHash = hash;
 		if (hash != 0)
 		{
-			backpackItemInstance = player.m_visEquipment.AttachItem(hash, 0, backBackpack);
+			backpackItemInstances = visEquipment.AttachArmor(hash);
 		}
 		return true;
 	}
-	
+
 	private void setBackpackItem(string name)
 	{
 		if (backpackItem == name)
@@ -208,7 +217,7 @@ public class Visual
 			return;
 		}
 		backpackItem = name;
-		if (player.m_nview.GetZDO() is { } zdo && player.m_nview.IsOwner())
+		if (visEquipment.m_nview.GetZDO() is { } zdo && visEquipment.m_nview.IsOwner())
 		{
 			zdo.Set("BackpackItem", string.IsNullOrEmpty(name) ? 0 : name.GetStableHashCode());
 		}

@@ -18,15 +18,15 @@ namespace Backpacks;
 public class Backpacks : BaseUnityPlugin
 {
 	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.1.0";
+	private const string ModVersion = "1.1.1";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
 	private static ConfigEntry<Toggle> serverConfigLocked = null!;
 	public static ConfigEntry<Toggle> preventInventoryClosing = null!;
-	public static ConfigEntry<string> backpackRows = null!;
-	public static ConfigEntry<string> backpackColumns = null!;
+	private static ConfigEntry<string> backpackRows = null!;
+	private static ConfigEntry<string> backpackColumns = null!;
 	public static ConfigEntry<int> backpackWeightFactor = null!;
 	public static ConfigEntry<Toggle> preventTeleportation = null!;
 	public static ConfigEntry<Toggle> backpackCeption = null!;
@@ -64,7 +64,7 @@ public class Backpacks : BaseUnityPlugin
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
 		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, "If on, pressing the interact key will not close the inventory.", false);
-		backpackRows = config("2 - Backpack", "Backpack Slot Rows", "3, 3, 4, 4, 3", new ConfigDescription("Rows in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
+		backpackRows = config("2 - Backpack", "Backpack Slot Rows", "3, 3, 4, 4, 4", new ConfigDescription("Rows in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
 		backpackRows.SettingChanged += (_, _) => ParseBackpackSize();
 		backpackColumns = config("2 - Backpack", "Backpack Slot Columns", "5, 6, 5, 6, 7", new ConfigDescription("Columns in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
 		backpackWeightFactor = config("2 - Backpack", "Backpack Weight", 100, new ConfigDescription("Weight of items inside a Backpack.", new AcceptableValueRange<int>(0, 100)));
