@@ -1,5 +1,6 @@
 ﻿#if ! API
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 using HarmonyLib;
 #endif
@@ -46,9 +47,56 @@ public class ItemContainer : ItemData
 #if API
 		return new Vector2i();
 #else
-		return new Vector2i(Backpacks.backpackColumns.Value, Backpacks.backpackRows.Value);
+		return new Vector2i(Backpacks.backpackColumnsByLevel[0], Backpacks.backpackRowsByLevel[0]);
 #endif
 	}
+	
+#if ! API
+	public override void Upgraded()
+	{
+		Resize(new Vector2i(Backpacks.backpackColumnsByLevel[Math.Min(Backpacks.backpackColumnsByLevel.Count, Item.m_quality) - 1], Backpacks.backpackRowsByLevel[Math.Min(Backpacks.backpackRowsByLevel.Count, Item.m_quality) - 1]));
+	}
+#endif
+
+	public void Resize(Vector2i dimensions)
+	{
+#if ! API
+		int oldSize = Inventory.m_width * Inventory.m_height;
+		if (oldSize > dimensions.x * dimensions.y)
+		{
+			return;
+		}
+
+		IEnumerator<Vector2i> enumerate()
+		{
+			int y = 0;
+			while (true)
+			{
+				for (int x = y >= Inventory.m_height ? 0 : Inventory.m_width; x < dimensions.x; ++x)
+				{
+					yield return new Vector2i(x, y);
+				}
+				++y;
+			}
+		}
+		IEnumerator<Vector2i> freePositions = enumerate();
+
+		foreach (ItemDrop.ItemData item in Inventory.m_inventory)
+		{
+			if (item.m_gridPos.x >= dimensions.x || item.m_gridPos.y >= dimensions.y)
+			{
+				item.m_gridPos = freePositions.Current;
+				freePositions.MoveNext();
+			}
+		}
+
+		Inventory.m_width = dimensions.x;
+		Inventory.m_height = dimensions.y;
+		Save();
+#endif
+	}
+
+	public virtual bool IsEquipable() => true;
 
 	public virtual bool ShowTakeAllButton() => true;
 	public virtual bool AllowOpeningByKeypress() => true;
