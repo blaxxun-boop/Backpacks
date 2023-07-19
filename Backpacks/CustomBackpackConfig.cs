@@ -537,6 +537,7 @@ public class CustomBackpackConfig
 							Prefab = { name = kv.Key },
 						};
 						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name = kv.Key;
+						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_description = "";
 						_ = item.Name; // init name
 					}
 					item.Description.English(kv.Value.Description ?? "A random backpack.");
