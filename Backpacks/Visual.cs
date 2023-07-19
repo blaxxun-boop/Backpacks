@@ -10,7 +10,7 @@ namespace Backpacks;
 
 public class Visual
 {
-	private static readonly Dictionary<VisEquipment, Visual> visuals = new();
+	public static readonly Dictionary<VisEquipment, Visual> visuals = new();
 
 	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.IsEquipable))]
 	private static class IsEquipable
@@ -165,8 +165,8 @@ public class Visual
 	private ItemDrop.ItemData? equippedBackpackItem;
 
 	private string backpackItem = "";
-	private List<GameObject> backpackItemInstances = new();
-	private int currentBackpackItemHash;
+	public List<GameObject> backpackItemInstances = new();
+	public int currentBackpackItemHash;
 
 	private Visual(VisEquipment visEquipment)
 	{
@@ -182,7 +182,7 @@ public class Visual
 		}
 		else
 		{
-			hash = backpackItem.GetStableHashCode();
+			hash = string.IsNullOrEmpty(backpackItem) ? 0 : backpackItem.GetStableHashCode();
 		}
 
 		if (setBackpackEquipped(hash))

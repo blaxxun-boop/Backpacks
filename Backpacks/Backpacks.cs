@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Reflection;
 using BepInEx;
@@ -8,6 +9,7 @@ using HarmonyLib;
 using ItemManager;
 using ServerSync;
 using ItemDataManager;
+using JetBrains.Annotations;
 using LocalizationManager;
 using UnityEngine;
 
@@ -15,15 +17,16 @@ namespace Backpacks;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 [BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
-public class Backpacks : BaseUnityPlugin
+public partial class Backpacks : BaseUnityPlugin
 {
-	private const string ModName = "Backpacks";
-	private const string ModVersion = "1.1.1";
+	internal const string ModName = "Backpacks";
+	private const string ModVersion = "1.2.0";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
-	private static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
+	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
 	private static ConfigEntry<Toggle> serverConfigLocked = null!;
+	internal static SyncedConfigEntry<Toggle> useExternalYaml = null!;
 	public static ConfigEntry<Toggle> preventInventoryClosing = null!;
 	private static ConfigEntry<string> backpackRows = null!;
 	private static ConfigEntry<string> backpackColumns = null!;
@@ -34,6 +37,9 @@ public class Backpacks : BaseUnityPlugin
 
 	public static List<int> backpackRowsByLevel = new();
 	public static List<int> backpackColumnsByLevel = new();
+
+	internal static List<string> configFilePaths = null!;
+	internal static readonly CustomSyncedValue<List<string>> customBackpackDefinition = new(configSync, "custom backpacks", new List<string>());
 
 	private ConfigEntry<T> config<T>(string group, string name, T value, ConfigDescription description, bool synchronizedSetting = true)
 	{
@@ -53,16 +59,33 @@ public class Backpacks : BaseUnityPlugin
 		Off = 0
 	}
 
-	private static Item backpack = null!;
+	public static Item Backpack = null!;
+
+	[PublicAPI]
+	public class ConfigurationManagerAttributes
+	{
+		public bool? HideSettingName;
+		public bool? HideDefaultButton;
+		public Action<ConfigEntryBase>? CustomDrawer;
+	}
 
 	public void Awake()
 	{
 		Localizer.Load();
+		configFilePaths = new List<string> { Path.GetDirectoryName(Config.ConfigFilePath), Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) };
 
-		backpack = new Item("bp_explorer", "bp_explorer");
+		Backpack = new Item("bp_explorer", "bp_explorer");
+
+		foreach (SkinnedMeshRenderer renderer in Backpack.Prefab.transform.Find("attach_skin/Mesh").GetComponentsInChildren<SkinnedMeshRenderer>(true))
+		{
+			CustomBackpackConfig.BackpackParts.Add(renderer.name);
+		}
 
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
+		useExternalYaml = configSync.AddConfigEntry(Config.Bind("2 - Backpack", "Use External YAML", Toggle.Off, "If set to on, the YAML file from your config folder will be used, to implement custom Backpacks inside of that file."));
+		useExternalYaml.SourceConfig.SettingChanged += (_, _) => ConfigLoader.reloadConfigFile();
+		config("2 - Backpack", "YAML Editor Anchor", 0, new ConfigDescription("Just ignore this.", null, new ConfigurationManagerAttributes { HideSettingName = true, HideDefaultButton = true, CustomDrawer = DrawYamlEditorButton }), false);
 		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, "If on, pressing the interact key will not close the inventory.", false);
 		backpackRows = config("2 - Backpack", "Backpack Slot Rows", "3, 3, 4, 4, 4", new ConfigDescription("Rows in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
 		backpackRows.SettingChanged += (_, _) => ParseBackpackSize();
@@ -78,24 +101,24 @@ public class Backpacks : BaseUnityPlugin
 		Harmony harmony = new(ModGUID);
 		harmony.PatchAll(assembly);
 
-		backpack.Crafting.Add(CraftingTable.Workbench, 2);
-		backpack.RequiredItems.Add("BronzeNails", 5);
-		backpack.RequiredItems.Add("DeerHide", 10);
-		backpack.RequiredItems.Add("LeatherScraps", 10);
-		backpack.RequiredUpgradeItems.Add("Iron", 5, 2);
-		backpack.RequiredUpgradeItems.Add("ElderBark", 10, 2);
-		backpack.RequiredUpgradeItems.Add("Guck", 2, 2);
-		backpack.RequiredUpgradeItems.Add("Silver", 5, 3);
-		backpack.RequiredUpgradeItems.Add("WolfPelt", 3, 3);
-		backpack.RequiredUpgradeItems.Add("JuteRed", 2, 3);
-		backpack.RequiredUpgradeItems.Add("BlackMetal", 5, 4);
-		backpack.RequiredUpgradeItems.Add("LinenThread", 10, 4);
-		backpack.RequiredUpgradeItems.Add("LoxPelt", 2, 4);
-		backpack.RequiredUpgradeItems.Add("JuteBlue", 5, 5);
-		backpack.RequiredUpgradeItems.Add("ScaleHide", 5, 5);
-		backpack.RequiredUpgradeItems.Add("Carapace", 5, 5);
+		Backpack.Crafting.Add(CraftingTable.Workbench, 2);
+		Backpack.RequiredItems.Add("BronzeNails", 5);
+		Backpack.RequiredItems.Add("DeerHide", 10);
+		Backpack.RequiredItems.Add("LeatherScraps", 10);
+		Backpack.RequiredUpgradeItems.Add("Iron", 5, 2);
+		Backpack.RequiredUpgradeItems.Add("ElderBark", 10, 2);
+		Backpack.RequiredUpgradeItems.Add("Guck", 2, 2);
+		Backpack.RequiredUpgradeItems.Add("Silver", 5, 3);
+		Backpack.RequiredUpgradeItems.Add("WolfPelt", 3, 3);
+		Backpack.RequiredUpgradeItems.Add("JuteRed", 2, 3);
+		Backpack.RequiredUpgradeItems.Add("BlackMetal", 5, 4);
+		Backpack.RequiredUpgradeItems.Add("LinenThread", 10, 4);
+		Backpack.RequiredUpgradeItems.Add("LoxPelt", 2, 4);
+		Backpack.RequiredUpgradeItems.Add("JuteBlue", 5, 5);
+		Backpack.RequiredUpgradeItems.Add("ScaleHide", 5, 5);
+		Backpack.RequiredUpgradeItems.Add("Carapace", 5, 5);
 
-		backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
+		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
 	}
 
 	private static void ParseBackpackSize()
@@ -140,14 +163,14 @@ public class Backpacks : BaseUnityPlugin
 		}
 
 		int maxQuality = Math.Min(backpackRowsByLevel.Count, backpackColumnsByLevel.Count);
-		backpack.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_maxQuality = maxQuality;
+		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_maxQuality = maxQuality;
 
 		if (ObjectDB.instance)
 		{
 			Inventory[] inventories = Player.s_players.Select(p => p.GetInventory()).Concat(FindObjectsOfType<Container>().Select(c => c.GetInventory())).Where(c => c is not null).ToArray();
 			foreach (ItemDrop.ItemData itemdata in ObjectDB.instance.m_items.Select(p => p.GetComponent<ItemDrop>()).Where(c => c && c.GetComponent<ZNetView>()).Concat(ItemDrop.s_instances).Select(i => i.m_itemData).Concat(inventories.SelectMany(i => i.GetAllItems())))
 			{
-				if (itemdata.m_shared.m_name == backpack.Prefab.name)
+				if (itemdata.m_shared.m_name == Backpack.Prefab.name)
 				{
 					itemdata.m_shared.m_maxQuality = maxQuality;
 				}

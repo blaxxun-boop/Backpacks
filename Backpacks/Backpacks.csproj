@@ -1,6 +1,6 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+    <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')"/>
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -100,10 +100,10 @@
         <Reference Include="ServerSync">
             <HintPath>Libs\ServerSync.dll</HintPath>
         </Reference>
-        <Reference Include="System" />
-        <Reference Include="System.Core" />
-        <Reference Include="System.Data" />
-        <Reference Include="System.Xml" />
+        <Reference Include="System"/>
+        <Reference Include="System.Core"/>
+        <Reference Include="System.Data"/>
+        <Reference Include="System.Xml"/>
         <Reference Include="UnityEngine, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.dll</HintPath>
         </Reference>
@@ -112,6 +112,9 @@
         </Reference>
         <Reference Include="UnityEngine.CoreModule, Version=0.0.0.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.CoreModule.dll</HintPath>
+        </Reference>
+        <Reference Include="UnityEngine.IMGUIModule">
+            <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.IMGUIModule.dll</HintPath>
         </Reference>
         <Reference Include="UnityEngine.InputLegacyModule">
             <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.InputLegacyModule.dll</HintPath>
@@ -125,27 +128,30 @@
         <Reference Include="UnityEngine.UIModule">
             <HintPath>$(GamePath)\unstripped_corlib\UnityEngine.UIModule.dll</HintPath>
         </Reference>
+        <Reference Include="YamlDotNet, Version=13.0.0.0, Culture=neutral, PublicKeyToken=ec19458f3c15af5e, processorArchitecture=MSIL">
+            <HintPath>..\packages\YamlDotNet.13.1.1\lib\net45\YamlDotNet.dll</HintPath>
+        </Reference>
     </ItemGroup>
     <ItemGroup Condition=" '$(Configuration)|$(Platform)' == 'APIStub|AnyCPU'">
-        <Compile Include="API\AssemblyResolver.cs" />
-        <EmbeddedResource Include="bin\API\Backpacks.dll" Link="Backpacks.dll" />
+        <Compile Include="API\AssemblyResolver.cs"/>
+        <EmbeddedResource Include="bin\API\Backpacks.dll" Link="Backpacks.dll"/>
     </ItemGroup>
     <ItemGroup Condition=" '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU' ">
-        <Compile Include="ItemContainer.cs" />
+        <Compile Include="ItemContainer.cs"/>
         <Content Include="Libs\ItemDataManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
-        <Content Include="ILRepack.targets" />
+        <Content Include="ILRepack.targets"/>
     </ItemGroup>
     <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
-        <Compile Include="Backpacks.cs" />
-        <Compile Include="Visual.cs" />
-        <Compile Include="CustomContainer.cs" />
-        <Compile Include="Properties\AssemblyInfo.cs" />
+        <Compile Include="Backpacks.cs"/>
+        <Compile Include="Visual.cs"/>
+        <Compile Include="CustomContainer.cs"/>
+        <Compile Include="Properties\AssemblyInfo.cs"/>
     </ItemGroup>
     <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
-        <EmbeddedResource Include="translations\English.yml" />
-        <EmbeddedResource Include="assets\bp_explorer" />
+        <EmbeddedResource Include="translations\English.yml"/>
+        <EmbeddedResource Include="assets\bp_explorer"/>
         <Content Include="Libs\ItemManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
@@ -157,15 +163,22 @@
         </Content>
     </ItemGroup>
     <ItemGroup>
-        <None Include="packages.config" />
+        <None Include="packages.config"/>
     </ItemGroup>
-    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
-    <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets')" />
+    <ItemGroup>
+        <Compile Include="ConfigEditor.cs"/>
+        <Compile Include="ConfigLoader.cs"/>
+        <Compile Include="CustomBackpack.cs"/>
+        <Compile Include="CustomBackpackConfig.cs"/>
+        <Compile Include="ItemGroups.cs"/>
+    </ItemGroup>
+    <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets"/>
+    <Import Project="..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets" Condition="Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets')"/>
     <Target Name="EnsureNuGetPackageBuildImports" BeforeTargets="PrepareForBuild">
         <PropertyGroup>
             <ErrorText>This project references NuGet package(s) that are missing on this computer. Enable NuGet Package Restore to download them. For more information, see http://go.microsoft.com/fwlink/?LinkID=322105.The missing file is {0}.</ErrorText>
         </PropertyGroup>
-        <Error Condition="!Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets'))" />
+        <Error Condition="!Exists('..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\ILRepack.Lib.MSBuild.Task.2.0.18.2\build\ILRepack.Lib.MSBuild.Task.targets'))"/>
     </Target>
     <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
          Other similar extension points exist, see Microsoft.Common.targets.
@@ -175,6 +188,6 @@
     </Target>
     -->
     <Target Name="Copy" AfterTargets="ILRepack" Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU'">
-        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(GamePath)\BepInEx\plugins\$(AssemblyName).dll&quot;" />
+        <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(GamePath)\BepInEx\plugins\$(AssemblyName).dll&quot;"/>
     </Target>
 </Project>

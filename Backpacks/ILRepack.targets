@@ -7,6 +7,7 @@
             <InputAssemblies Include="$(OutputPath)Libs\ItemManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\ItemDataManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\LocalizationManager.dll"/>
+            <InputAssemblies Include="$(OutputPath)YamlDotNet.dll"/>
         </ItemGroup>
         <ItemGroup>
             <DoNotInternalizeAssemblies Include="ItemDataManager" />
