@@ -44,6 +44,26 @@ public static class ConfigLoader
 			}
 		}
 	}
+	
+	[HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+	private class ServerApplyConfig
+	{
+		[UsedImplicitly]
+		[HarmonyPriority(Priority.VeryLow)]
+		private static void Postfix()
+		{
+			if (ZNet.instance && ZNet.instance.IsDedicated())
+			{
+				foreach (Loader loader in loaders)
+				{
+					if (loader.Enabled)
+					{
+						loader.ApplyConfig();
+					}
+				}
+			}
+		}
+	}
 
 	[HarmonyPatch(typeof(FejdStartup), nameof(FejdStartup.Start))]
 	private class DelayedConfigLoading

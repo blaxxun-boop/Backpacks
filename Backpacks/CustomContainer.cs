@@ -32,7 +32,7 @@ internal static class CustomContainer
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnTakeAll)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnSelectedItem)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.IsContainerOpen)),
-			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.UpdateContainerWeight))
+			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.UpdateContainerWeight)),
 		};
 
 		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructionsList, ILGenerator ilg)
@@ -88,7 +88,7 @@ internal static class CustomContainer
 		private static IEnumerable<MethodInfo> TargetMethods() => new[]
 		{
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.Hide)),
-			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.CloseContainer))
+			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.CloseContainer)),
 		};
 
 		private static void Prefix(InventoryGui __instance)

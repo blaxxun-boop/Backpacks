@@ -579,7 +579,7 @@ public class CustomBackpackConfig
 
 					foreach (Player player in Player.s_players)
 					{
-						if (Visual.visuals[player.m_visEquipment].currentBackpackItemHash == item.Prefab.name.GetStableHashCode())
+						if (Visual.visuals.TryGetValue(player.m_visEquipment, out Visual backpackVisual) && backpackVisual.currentBackpackItemHash == item.Prefab.name.GetStableHashCode())
 						{
 							foreach (GameObject backpackInstance in Visual.visuals[player.m_visEquipment].backpackItemInstances)
 							{
