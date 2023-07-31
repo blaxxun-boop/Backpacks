@@ -534,7 +534,7 @@ public class CustomBackpackConfig
 						item = loadedBackpacks[kv.Key] = new Item(Object.Instantiate(Backpacks.Backpack.Prefab, backpackPrefabs.transform))
 						{
 							Configurable = Configurability.Disabled,
-							Prefab = { name = kv.Key },
+							Prefab = { name = new string(kv.Key.Where(c => c is not ' ' and not '/' and not '(' and not ')').ToArray()) },
 						};
 						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name = kv.Key;
 						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_description = "";
