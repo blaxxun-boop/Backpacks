@@ -72,9 +72,8 @@ public class Visual
 	{
 		private static void Prefix(Humanoid __instance)
 		{
-			if (__instance is Player player)
+			if (__instance is Player player && visuals.TryGetValue(player.m_visEquipment, out Visual visual))
 			{
-				Visual visual = visuals[player.m_visEquipment];
 				visual.setBackpackItem(visual.equippedBackpackItem is null ? "" : visual.equippedBackpackItem.m_dropPrefab.name);
 			}
 		}
@@ -163,7 +162,6 @@ public class Visual
 
 	private readonly VisEquipment visEquipment;
 	private ItemDrop.ItemData? equippedBackpackItem;
-
 	private string backpackItem = "";
 	public List<GameObject> backpackItemInstances = new();
 	public int currentBackpackItemHash;
@@ -222,4 +220,5 @@ public class Visual
 			zdo.Set("BackpackItem", string.IsNullOrEmpty(name) ? 0 : name.GetStableHashCode());
 		}
 	}
+
 }
