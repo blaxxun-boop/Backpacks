@@ -100,6 +100,7 @@ internal static class CustomContainer
 				anchoredPosition = new Vector2(anchoredPosition.x, -anchoredPosition.y);
 				takeAllButton.anchoredPosition = anchoredPosition;
 				takeAllButton.gameObject.SetActive(true);
+				__instance.m_stackAllButton.gameObject.SetActive(true);
 
 				container.Close();
 				container.Inventory.m_onChanged -= SaveItemContainer;
@@ -153,6 +154,7 @@ internal static class CustomContainer
 					return true;
 				}
 
+				invGui.m_stackAllButton.gameObject.SetActive(OpenContainer.AllowStacking());
 				invGui.m_container.gameObject.SetActive(true);
 				invGui.m_containerGrid.UpdateInventory(OpenContainer.Inventory, null, invGui.m_dragItem);
 				invGui.m_containerName.text = OpenContainer.GetContainerTitle();
@@ -169,6 +171,11 @@ internal static class CustomContainer
 
 		private static bool Prefix(InventoryGui __instance)
 		{
+			if (OpenContainer is not null && !OpenContainer.AllowStacking())
+			{
+				__instance.m_containerHoldTime = 0;
+			}
+			
 			ItemDrop.ItemData? item = null;
 			if (ZInput.GetButton("Use") || ZInput.GetButton("JoyUse"))
 			{

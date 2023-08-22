@@ -20,7 +20,7 @@ namespace Backpacks;
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.2.3";
+	private const string ModVersion = "1.2.4";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
