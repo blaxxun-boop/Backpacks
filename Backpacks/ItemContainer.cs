@@ -35,7 +35,10 @@ public class ItemContainer : ItemData
 					hasClonedSharedData = true;
 				}
 
-				Item.m_shared.m_teleportable = Inventory.IsTeleportable();
+				if (ZoneSystem.instance)
+				{
+					Item.m_shared.m_teleportable = Inventory.IsTeleportable();
+				}
 			}
 			Player.m_localPlayer?.GetInventory().UpdateTotalWeight();
 		};
