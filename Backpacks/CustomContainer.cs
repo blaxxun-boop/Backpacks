@@ -95,11 +95,7 @@ internal static class CustomContainer
 		{
 			if (OpenContainer is { } container)
 			{
-				RectTransform takeAllButton = (RectTransform)__instance.m_takeAllButton.transform;
-				Vector2 anchoredPosition = takeAllButton.anchoredPosition;
-				anchoredPosition = new Vector2(anchoredPosition.x, -anchoredPosition.y);
-				takeAllButton.anchoredPosition = anchoredPosition;
-				takeAllButton.gameObject.SetActive(true);
+				__instance.m_takeAllButton.gameObject.SetActive(true);
 				__instance.m_stackAllButton.gameObject.SetActive(true);
 
 				container.Close();
@@ -134,14 +130,9 @@ internal static class CustomContainer
 				Inventory inv = container.Inventory;
 				inv.m_onChanged += SaveItemContainer;
 
-				RectTransform takeAllButton = (RectTransform)invGui.m_takeAllButton.transform;
-				Vector2 anchoredPosition = takeAllButton.anchoredPosition;
-				anchoredPosition = new Vector2(anchoredPosition.x, -anchoredPosition.y);
-				takeAllButton.anchoredPosition = anchoredPosition;
-
 				if (!container.ShowTakeAllButton())
 				{
-					takeAllButton.gameObject.SetActive(false);
+					invGui.m_takeAllButton.gameObject.SetActive(false);
 				}
 			}
 
@@ -175,7 +166,7 @@ internal static class CustomContainer
 			{
 				__instance.m_containerHoldTime = 0;
 			}
-			
+
 			ItemDrop.ItemData? item = null;
 			if (ZInput.GetButton("Use") || ZInput.GetButton("JoyUse"))
 			{
