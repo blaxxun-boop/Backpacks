@@ -1,12 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <Project xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
-    <Target Name="ILRepacker" AfterTargets="Build" Condition=" '$(Configuration)|$(Platform)' != 'API|AnyCPU' and '$(Configuration)|$(Platform)' != 'APIStub|AnyCPU' ">
+    <Target Name="ILRepacker" AfterTargets="Build" Condition=" '$(Configuration)|$(Platform)' != 'API|AnyCPU' ">
         <ItemGroup>
             <InputAssemblies Include="$(TargetPath)"/>
             <InputAssemblies Include="$(OutputPath)Libs\ServerSync.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\ItemManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\ItemDataManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\LocalizationManager.dll"/>
+            <InputAssemblies Include="$(OutputPath)Libs\APIManager.dll"/>
             <InputAssemblies Include="$(OutputPath)YamlDotNet.dll"/>
         </ItemGroup>
         <ItemGroup>

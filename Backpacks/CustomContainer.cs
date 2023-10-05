@@ -4,6 +4,7 @@ using System.Reflection;
 using System.Reflection.Emit;
 using HarmonyLib;
 using ItemDataManager;
+using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -382,20 +383,16 @@ internal static class CustomContainer
 				UITooltip tooltip = __instance.m_playerGrid.m_elementPrefab.GetComponent<UITooltip>();
 				tooltip.gameObject.AddComponent<TooltipPressOpen>();
 				Transform tooltipBkg = tooltip.m_tooltipPrefab.transform.Find("Bkg");
-				Text templateText = tooltipBkg.transform.Find("Text").GetComponent<Text>();
-				Outline templateOutline = tooltipBkg.transform.Find("Text").GetComponent<Outline>();
+				TextMeshProUGUI templateText = tooltipBkg.transform.Find("Text").GetComponent<TextMeshProUGUI>();
 				GameObject pressText = new("PressToOpenItemContainer");
 				pressText.transform.SetParent(tooltipBkg);
-				Text text = pressText.AddComponent<Text>();
+				TextMeshProUGUI text = pressText.AddComponent<TextMeshProUGUI>();
 				text.font = templateText.font;
 				text.fontSize = templateText.fontSize;
-				text.alignment = TextAnchor.UpperCenter;
+				text.alignment = TextAlignmentOptions.Center;
 				ContentSizeFitter fitter = pressText.AddComponent<ContentSizeFitter>();
 				fitter.horizontalFit = ContentSizeFitter.FitMode.PreferredSize;
 				fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
-				Outline outline = pressText.AddComponent<Outline>();
-				outline.effectColor = templateOutline.effectColor;
-				outline.effectDistance = templateOutline.effectDistance;
 				pressText.SetActive(false);
 			}
 		}
@@ -410,7 +407,7 @@ internal static class CustomContainer
 			{
 				if (__instance.GetComponent<TooltipPressOpen>()?.text is { } pressOpen)
 				{
-					transform.GetComponent<Text>().text = pressOpen;
+					transform.GetComponent<TextMeshProUGUI>().text = pressOpen;
 					transform.gameObject.SetActive(true);
 				}
 				else
