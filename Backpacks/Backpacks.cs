@@ -20,7 +20,7 @@ namespace Backpacks;
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.2.7";
+	private const string ModVersion = "1.2.8";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -71,7 +71,7 @@ public partial class Backpacks : BaseUnityPlugin
 
 	public void Awake()
 	{
-		APIManager.Patcher.Patch();
+		APIManager.Patcher.Patch(new []{ typeof(ItemData).Namespace });
 		Localizer.Load();
 		configFilePaths = new List<string> { Path.GetDirectoryName(Config.ConfigFilePath), Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) };
 
