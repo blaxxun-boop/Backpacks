@@ -29,7 +29,7 @@ public class Visual
 	{
 		private static void Postfix(Humanoid __instance, ItemDrop.ItemData item, ref bool __result)
 		{
-			if (__instance is Player player && visuals[player.m_visEquipment].equippedBackpackItem == item)
+			if (__instance is Player player && visuals.TryGetValue(player.m_visEquipment, out Visual visual) && visual.equippedBackpackItem == item)
 			{
 				__result = true;
 			}
