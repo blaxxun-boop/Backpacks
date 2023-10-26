@@ -161,7 +161,7 @@ public class Visual
 	}
 
 	private readonly VisEquipment visEquipment;
-	private ItemDrop.ItemData? equippedBackpackItem;
+	public ItemDrop.ItemData? equippedBackpackItem;
 	private string backpackItem = "";
 	public List<GameObject> backpackItemInstances = new();
 	public int currentBackpackItemHash;

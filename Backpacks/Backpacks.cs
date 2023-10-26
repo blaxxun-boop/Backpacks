@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
+using AzuExtendedPlayerInventory;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -17,10 +18,11 @@ namespace Backpacks;
 
 [BepInPlugin(ModGUID, ModName, ModVersion)]
 [BepInIncompatibility("org.bepinex.plugins.valheim_plus")]
+[BepInDependency("Azumatt.AzuExtendedPlayerInventory", BepInDependency.DependencyFlags.SoftDependency)]
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.2.9";
+	private const string ModVersion = "1.2.10";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -120,7 +122,14 @@ public partial class Backpacks : BaseUnityPlugin
 		Backpack.RequiredUpgradeItems.Add("Carapace", 5, 5);
 
 		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
+
+		if (API.IsLoaded())
+		{
+			API.AddSlot("Backpack", player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
+		}
 	}
+
+	private static bool validateBackpack(ItemDrop.ItemData item) => item.Data().Get<ItemContainer>() is { } backpack && backpack.IsEquipable();
 
 	private static void ParseBackpackSize()
 	{

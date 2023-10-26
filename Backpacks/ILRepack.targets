@@ -8,6 +8,7 @@
             <InputAssemblies Include="$(OutputPath)Libs\ItemDataManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\LocalizationManager.dll"/>
             <InputAssemblies Include="$(OutputPath)Libs\APIManager.dll"/>
+            <InputAssemblies Include="$(OutputPath)Libs\AzuExtendedPlayerInventoryAPI.dll"/>
             <InputAssemblies Include="$(OutputPath)YamlDotNet.dll"/>
         </ItemGroup>
         <ItemGroup>
