@@ -152,6 +152,8 @@ public class ItemContainer : ItemData
 #endif
 	}
 
+	public virtual bool CanAddItemManually(ItemDrop.ItemData item) => CanAddItem(item);
+
 	public virtual bool CanRemoveItem(ItemDrop.ItemData item) => true;
 
 	public virtual bool RemoveItem(ItemDrop.ItemData item) => true;

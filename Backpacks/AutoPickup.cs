@@ -85,22 +85,39 @@ public static class AutoPickup
 	{
 		public static bool PickingUp = false;
 		private static void Prefix() => PickingUp = true;
-		private static void Finalizer() => PickingUp = false;
+		private static void Finalizer()
+		{
+			PickingUp = false;
+			AutoPickupItemsWithFullInventory.itemCache.Clear();
+		}
 	}
 
 	[HarmonyPatch(typeof(Inventory), nameof(Inventory.CanAddItem), typeof(ItemDrop.ItemData), typeof(int))]
 	private static class AutoPickupItemsWithFullInventory
 	{
+		public static readonly HashSet<int> itemCache = new();
+		
 		private static void Postfix(Inventory __instance, ItemDrop.ItemData item, ref bool __result)
 		{
 			if (!__result && CheckAutoPickupActive.PickingUp && Backpacks.autoFillBackpacks.Value == Backpacks.Toggle.On)
 			{
+				int hash = ((5342 + item.m_stack) << 5 + item.m_shared.m_name.GetHashCode()) << 5 + item.m_quality << 5 + item.m_customData.GetHashCode();
+				if (itemCache.Contains(hash))
+				{
+					return;
+				}
+				
 				foreach (ItemDrop.ItemData inventoryItem in __instance.m_inventory)
 				{
 					if (inventoryItem.Data().Get<ItemContainer>() is { } container && container.Inventory.CanAddItem(item) && container.CanAddItem(item) && container.MayAutoPickup(item))
 					{
 						__result = true;
 					}
+				}
+
+				if (!__result)
+				{
+					itemCache.Add(hash);
 				}
 			}
 		}

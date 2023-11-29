@@ -102,8 +102,8 @@ public partial class Backpacks : BaseUnityPlugin
 		preventTeleportation = config("2 - Backpack", "Backpack Teleportation Check", Toggle.On, new ConfigDescription("If off, portals do not check the content of a backpack upon teleportation."));
 		backpackCeption = config("2 - Backpack", "Backpacks in Backpacks", Toggle.Off, new ConfigDescription("If on, you can put backpacks into backpacks."));
 		backpackChests = config("2 - Backpack", "Backpacks in Chests", Toggle.Off, new ConfigDescription("If on, you can put backpacks that aren't empty into chests, to make the chests bigger on the inside."));
-		uniqueBackpack = config("2 - Backpack", "Unique Backpacks", Unique.Global, new ConfigDescription("Can be used to restrict the number of backpacks a player can have in their inventory.\nGlobal: Only one backpack.\nRestricted: No other backpacks without item restrictions allowed.\nType: Only one backpack of each type.\nBypass: As many backpacks as you want.\nNone: Same as bypass, but doesn't overrule every other flag."));
-		hiddenBackpack = config("2 - Backpack", "Hide Backpacks", Toggle.Off, new ConfigDescription("If on, the backpack visual is hidden."), false);
+		uniqueBackpack = config("2 - Backpack", "Unique Backpack", Unique.Global, new ConfigDescription("Can be used to restrict the number of backpacks a player can have in their inventory.\nGlobal: Only one backpack.\nRestricted: No other backpacks without item restrictions allowed.\nType: Only one backpack of each type.\nBypass: As many backpacks as you want.\nNone: Same as bypass, but doesn't overrule every other flag."));
+		hiddenBackpack = config("2 - Backpack", "Hide Backpack", Toggle.Off, new ConfigDescription("If on, the backpack visual is hidden."), false);
 		hiddenBackpack.SettingChanged += (_, _) =>
 		{
 			foreach (Visual visual in Visual.visuals.Values)
@@ -111,10 +111,10 @@ public partial class Backpacks : BaseUnityPlugin
 				visual.forceSetBackpackEquipped(visual.currentBackpackItemHash);
 			}
 		};
-		autoOpenBackpack = config("2 - Backpack", "Auto Open Backpacks", Toggle.On, new ConfigDescription("If on, the first backpack found in your inventory is opened automatically, if the inventory is opened."), false);
+		autoOpenBackpack = config("2 - Backpack", "Auto Open Backpack", Toggle.On, new ConfigDescription("If on, the backpack in your backpack slot is opened automatically, if the inventory is opened."), false);
 		equipStatusEffect = config("2 - Backpack", "Equip Status Effect", "", new ConfigDescription("Name of a status effect that should be applied to the player, if the backpack is equipped."));
 		equipStatusEffect.SettingChanged += (_, _) => AddStatusEffectToBackpack.Postfix(ObjectDB.instance);
-		autoFillBackpacks = config("2 - Backpack", "Auto Fill Backpacks", Toggle.On, new ConfigDescription("If on, items you pick up are added to your backpack. Conditions apply."), false);
+		autoFillBackpacks = config("2 - Backpack", "Auto Fill Backpack", Toggle.On, new ConfigDescription("If on, items you pick up are added to your backpack. Conditions apply."), false);
 
 		ParseBackpackSize();
 
@@ -316,21 +316,14 @@ public partial class Backpacks : BaseUnityPlugin
 	{
 		private static void Postfix(InventoryGui __instance, Container? container)
 		{
-			if (container is null && autoOpenBackpack.Value == Toggle.On)
+			if (container is null && autoOpenBackpack.Value == Toggle.On && Player.m_localPlayer && Visual.visuals.TryGetValue(Player.m_localPlayer.m_visEquipment, out Visual visual) && visual.equippedBackpackItem is {} backpack)
 			{
-				foreach (ItemDrop.ItemData inventoryItem in Player.m_localPlayer.GetInventory().m_inventory)
+				if (__instance.m_playerGrid.GetInventory() is null)
 				{
-					if (inventoryItem.Data().Get<ItemContainer>() is { } backpack)
-					{
-						if (__instance.m_playerGrid.GetInventory() is null)
-						{
-							__instance.m_playerGrid.m_inventory = Player.m_localPlayer.GetInventory();
-						}
-
-						CustomContainer.OpenFakeItemsContainer.Open(__instance, backpack.Item);
-						break;
-					}
+					__instance.m_playerGrid.m_inventory = Player.m_localPlayer.GetInventory();
 				}
+
+				CustomContainer.OpenFakeItemsContainer.Open(__instance, backpack);
 			}
 		}
 	}

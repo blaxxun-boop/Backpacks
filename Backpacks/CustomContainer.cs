@@ -248,7 +248,7 @@ internal static class CustomContainer
 
 					if (existingItem is not null && existingItem != item)
 					{
-						if (!OpenContainer.CanAddItem(existingItem))
+						if (!OpenContainer.CanAddItemManually(existingItem))
 						{
 							__result = false;
 							return false;
@@ -287,7 +287,7 @@ internal static class CustomContainer
 				return false;
 			}
 
-			if (!OpenContainer.CanAddItem(item))
+			if (!OpenContainer.CanAddItemManually(item))
 			{
 				__result = false;
 				return false;
@@ -331,7 +331,7 @@ internal static class CustomContainer
 			else if (item is not null && mod == InventoryGrid.Modifier.Move && OpenContainer?.Inventory is { } inventory && inventory != grid.m_inventory)
 			{
 				// Moving into container
-				if (!OpenContainer.CanAddItem(item))
+				if (!OpenContainer.CanAddItemManually(item))
 				{
 					return false;
 				}
@@ -378,6 +378,7 @@ internal static class CustomContainer
 	{
 		private static bool Updated = false;
 
+		[HarmonyPriority(Priority.VeryLow)]
 		private static void Postfix(InventoryGui __instance)
 		{
 			if (!Updated)
