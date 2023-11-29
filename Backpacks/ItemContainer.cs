@@ -9,6 +9,15 @@ using JetBrains.Annotations;
 
 namespace Backpacks;
 
+public enum Unique
+{
+	None = 0,
+	Global = 1,
+	Restricted = 2,
+	Type = 3,
+	Bypass = 4,
+}
+
 [PublicAPI]
 public class ItemContainer : ItemData
 {
@@ -53,7 +62,7 @@ public class ItemContainer : ItemData
 		return new Vector2i(Backpacks.backpackColumnsByLevel[0], Backpacks.backpackRowsByLevel[0]);
 #endif
 	}
-	
+
 #if ! API
 	public override void Upgraded()
 	{
@@ -100,6 +109,15 @@ public class ItemContainer : ItemData
 	}
 
 	public virtual bool IsEquipable() => true;
+	
+	public virtual Unique Uniqueness()
+	{
+#if API
+		return Unique.None;
+#else
+		return typeof(ItemContainer) == GetType() ? Backpacks.uniqueBackpack.Value : Unique.Bypass;
+#endif
+	}
 
 	public virtual bool ShowTakeAllButton() => true;
 	public virtual bool AllowOpeningByKeypress() => true;
@@ -137,6 +155,15 @@ public class ItemContainer : ItemData
 	public virtual bool CanRemoveItem(ItemDrop.ItemData item) => true;
 
 	public virtual bool RemoveItem(ItemDrop.ItemData item) => true;
+
+	public virtual bool MayAutoPickup(ItemDrop.ItemData item)
+	{
+#if API
+		return false;
+#else
+		return Backpacks.autoFillBackpacks.Value == Backpacks.Toggle.On;
+#endif
+	}
 
 	public virtual bool AllowStacking() => true;
 

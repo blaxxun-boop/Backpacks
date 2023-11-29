@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using AzuExtendedPlayerInventory;
 using BepInEx;
 using BepInEx.Configuration;
 using HarmonyLib;
@@ -22,7 +21,7 @@ namespace Backpacks;
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.2.11";
+	private const string ModVersion = "1.3.0";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -36,6 +35,11 @@ public partial class Backpacks : BaseUnityPlugin
 	public static ConfigEntry<Toggle> preventTeleportation = null!;
 	public static ConfigEntry<Toggle> backpackCeption = null!;
 	public static ConfigEntry<Toggle> backpackChests = null!;
+	public static ConfigEntry<Unique> uniqueBackpack = null!;
+	public static ConfigEntry<Toggle> hiddenBackpack = null!;
+	private static ConfigEntry<Toggle> autoOpenBackpack = null!;
+	private static ConfigEntry<string> equipStatusEffect = null!;
+	public static ConfigEntry<Toggle> autoFillBackpacks = null!;
 
 	public static List<int> backpackRowsByLevel = new();
 	public static List<int> backpackColumnsByLevel = new();
@@ -73,12 +77,12 @@ public partial class Backpacks : BaseUnityPlugin
 
 	public void Awake()
 	{
-		APIManager.Patcher.Patch(new []{ typeof(ItemData).Namespace });
+		APIManager.Patcher.Patch(new[] { typeof(ItemData).Namespace });
 		Localizer.Load();
 		configFilePaths = new List<string> { Path.GetDirectoryName(Config.ConfigFilePath), Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) };
 
 		Backpack = new Item("bp_explorer", "bp_explorer");
-
+		
 		foreach (SkinnedMeshRenderer renderer in Backpack.Prefab.transform.Find("attach_skin/Mesh").GetComponentsInChildren<SkinnedMeshRenderer>(true))
 		{
 			CustomBackpackConfig.BackpackParts.Add(renderer.name);
@@ -89,7 +93,7 @@ public partial class Backpacks : BaseUnityPlugin
 		useExternalYaml = configSync.AddConfigEntry(Config.Bind("2 - Backpack", "Use External YAML", Toggle.Off, "If set to on, the YAML file from your config folder will be used, to implement custom Backpacks inside of that file."));
 		useExternalYaml.SourceConfig.SettingChanged += (_, _) => ConfigLoader.reloadConfigFile();
 		config("2 - Backpack", "YAML Editor Anchor", 0, new ConfigDescription("Just ignore this.", null, new ConfigurationManagerAttributes { HideSettingName = true, HideDefaultButton = true, CustomDrawer = DrawYamlEditorButton }), false);
-		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, "If on, pressing the interact key will not close the inventory.", false);
+		preventInventoryClosing = config("2 - Backpack", "Prevent Closing", Toggle.On, new ConfigDescription("If on, pressing the interact key will not close the inventory."), false);
 		backpackRows = config("2 - Backpack", "Backpack Slot Rows", "3, 3, 4, 4, 4", new ConfigDescription("Rows in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
 		backpackRows.SettingChanged += (_, _) => ParseBackpackSize();
 		backpackColumns = config("2 - Backpack", "Backpack Slot Columns", "5, 6, 5, 6, 7", new ConfigDescription("Columns in a Backpack. One number for each upgrade level. Adding more numbers adds more upgrades. Changing this value does not affect existing Backpacks."));
@@ -98,6 +102,19 @@ public partial class Backpacks : BaseUnityPlugin
 		preventTeleportation = config("2 - Backpack", "Backpack Teleportation Check", Toggle.On, new ConfigDescription("If off, portals do not check the content of a backpack upon teleportation."));
 		backpackCeption = config("2 - Backpack", "Backpacks in Backpacks", Toggle.Off, new ConfigDescription("If on, you can put backpacks into backpacks."));
 		backpackChests = config("2 - Backpack", "Backpacks in Chests", Toggle.Off, new ConfigDescription("If on, you can put backpacks that aren't empty into chests, to make the chests bigger on the inside."));
+		uniqueBackpack = config("2 - Backpack", "Unique Backpacks", Unique.Global, new ConfigDescription("Can be used to restrict the number of backpacks a player can have in their inventory.\nGlobal: Only one backpack.\nRestricted: No other backpacks without item restrictions allowed.\nType: Only one backpack of each type.\nBypass: As many backpacks as you want.\nNone: Same as bypass, but doesn't overrule every other flag."));
+		hiddenBackpack = config("2 - Backpack", "Hide Backpacks", Toggle.Off, new ConfigDescription("If on, the backpack visual is hidden."), false);
+		hiddenBackpack.SettingChanged += (_, _) =>
+		{
+			foreach (Visual visual in Visual.visuals.Values)
+			{
+				visual.forceSetBackpackEquipped(visual.currentBackpackItemHash);
+			}
+		};
+		autoOpenBackpack = config("2 - Backpack", "Auto Open Backpacks", Toggle.On, new ConfigDescription("If on, the first backpack found in your inventory is opened automatically, if the inventory is opened."), false);
+		equipStatusEffect = config("2 - Backpack", "Equip Status Effect", "", new ConfigDescription("Name of a status effect that should be applied to the player, if the backpack is equipped."));
+		equipStatusEffect.SettingChanged += (_, _) => AddStatusEffectToBackpack.Postfix(ObjectDB.instance);
+		autoFillBackpacks = config("2 - Backpack", "Auto Fill Backpacks", Toggle.On, new ConfigDescription("If on, items you pick up are added to your backpack. Conditions apply."), false);
 
 		ParseBackpackSize();
 
@@ -124,9 +141,9 @@ public partial class Backpacks : BaseUnityPlugin
 
 		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
 
-		if (API.IsLoaded())
+		if (AzuExtendedPlayerInventory.API.IsLoaded())
 		{
-			API.AddSlot("Backpack", player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
+			AzuExtendedPlayerInventory.API.AddSlot("Backpack", player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
 		}
 	}
 
@@ -189,6 +206,19 @@ public partial class Backpacks : BaseUnityPlugin
 		}
 	}
 
+	[HarmonyPatch(typeof(ObjectDB), nameof(ObjectDB.Awake))]
+	private static class AddStatusEffectToBackpack
+	{
+		[HarmonyPriority(Priority.Low)]
+		public static void Postfix(ObjectDB __instance)
+		{
+			if (__instance)
+			{
+				Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_equipStatusEffect = __instance.GetStatusEffect(equipStatusEffect.Value.GetStableHashCode());
+			}
+		}
+	}
+
 	[HarmonyPatch]
 	private static class PreventBackpacksInChests
 	{
@@ -203,6 +233,123 @@ public partial class Backpacks : BaseUnityPlugin
 			}
 
 			return true;
+		}
+	}
+
+	private static bool CheckUniqueConflict(Unique unique, ItemDrop.ItemData item_a, ItemDrop.ItemData item_b)
+	{
+		switch (unique)
+		{
+			case Unique.Global:
+				return true;
+			case Unique.Restricted:
+				ItemContainer? container = item_b.Data().Get<ItemContainer>();
+				return container is CustomBackpack ? CustomBackpack.AllowedItems.TryGetValue(item_b.m_shared.m_name, out List<string> allowList) && allowList.Count > 0 : container?.GetType() == typeof(ItemContainer);
+			case Unique.Type:
+				return item_a.m_shared.m_name == item_b.m_shared.m_name;
+			default:
+				return false;
+		}
+	}
+
+	[HarmonyPatch(typeof(Inventory), nameof(Inventory.CanAddItem), typeof(ItemDrop.ItemData), typeof(int))]
+	private static class PreventMultipleBackpacks
+	{
+		[HarmonyPriority(Priority.Last)]
+		public static void Postfix(Inventory __instance, ItemDrop.ItemData item, ref bool __result)
+		{
+			if (__result && __instance == Player.m_localPlayer?.GetInventory() && item.Data().Get<ItemContainer>()?.Uniqueness() is { } unique and not Unique.Bypass)
+			{
+				foreach (ItemDrop.ItemData inventoryItem in __instance.m_inventory)
+				{
+					if (inventoryItem.Data().Get<ItemContainer>()?.Uniqueness() is { } otherUnique and not Unique.Bypass && inventoryItem != item)
+					{
+						if (CheckUniqueConflict(unique, item, inventoryItem) || (unique != otherUnique && CheckUniqueConflict(otherUnique, inventoryItem, item)))
+						{
+							__result = false;
+							return;
+						}
+					}
+				}
+			}
+		}
+	}
+
+	[HarmonyPatch]
+	private static class PreventMultipleBackpacksAddItem
+	{
+		private static IEnumerable<MethodInfo> TargetMethods() => new[]
+		{
+			AccessTools.DeclaredMethod(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData), typeof(int), typeof(int), typeof(int) }),
+			AccessTools.DeclaredMethod(typeof(Inventory), nameof(Inventory.AddItem), new[] { typeof(ItemDrop.ItemData) }),
+		};
+
+		private class SkipAddItemException : Exception;
+
+		[HarmonyPriority(Priority.VeryLow)]
+		private static bool Prefix(Inventory __instance, ItemDrop.ItemData item, bool __runOriginal, ref bool __result)
+		{
+			if (!__runOriginal)
+			{
+				return true;
+			}
+			
+			bool canAdd = true;
+			PreventMultipleBackpacks.Postfix(__instance, item, ref canAdd);
+			if (!canAdd)
+			{
+				Player.m_localPlayer.Message(MessageHud.MessageType.Center, Localization.instance.Localize("$bp_cannot_pickup_backpack"));
+				
+				Transform transform = Player.m_localPlayer.transform;
+				ItemDrop.DropItem(item, 1, transform.position + transform.forward + transform.up, Quaternion.identity);
+				__result = true;
+				throw new SkipAddItemException();
+			}
+			return canAdd;
+		}
+
+		private static Exception? Finalizer(Exception __exception) => __exception is SkipAddItemException ? null : __exception;
+	}
+
+	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.Show))]
+	private static class OpenBackpackAutomatically
+	{
+		private static void Postfix(InventoryGui __instance, Container? container)
+		{
+			if (container is null && autoOpenBackpack.Value == Toggle.On)
+			{
+				foreach (ItemDrop.ItemData inventoryItem in Player.m_localPlayer.GetInventory().m_inventory)
+				{
+					if (inventoryItem.Data().Get<ItemContainer>() is { } backpack)
+					{
+						if (__instance.m_playerGrid.GetInventory() is null)
+						{
+							__instance.m_playerGrid.m_inventory = Player.m_localPlayer.GetInventory();
+						}
+
+						CustomContainer.OpenFakeItemsContainer.Open(__instance, backpack.Item);
+						break;
+					}
+				}
+			}
+		}
+	}
+
+	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.UpdateRecipe))]
+	private static class PreventCrafting
+	{
+		private static void Postfix(InventoryGui __instance)
+		{
+			if (__instance.m_selectedRecipe.Value is null && __instance.m_selectedRecipe.Key?.m_item?.m_itemData.Data().Get<ItemContainer>() is { } backpack)
+			{
+				bool canAdd = true;
+				PreventMultipleBackpacks.Postfix(Player.m_localPlayer.GetInventory(), backpack.Item, ref canAdd);
+				if (!canAdd)
+				{
+					__instance.m_craftButton.interactable = false;
+					__instance.m_craftButton.GetComponent<UITooltip>().m_text = Localization.instance.Localize("$bp_cannot_pickup_backpack");
+				}
+			}
 		}
 	}
 }

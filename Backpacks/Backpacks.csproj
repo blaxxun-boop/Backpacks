@@ -132,6 +132,7 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
+        <Compile Include="API.cs" />
         <Compile Include="ItemContainer.cs"/>
         <Content Include="Libs\AzuExtendedPlayerInventoryAPI.dll">
           <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -142,6 +143,7 @@
         <Content Include="ILRepack.targets"/>
     </ItemGroup>
     <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU'">
+        <Compile Include="AutoPickup.cs" />
         <Compile Include="Backpacks.cs"/>
         <Compile Include="Visual.cs"/>
         <Compile Include="CustomContainer.cs"/>

@@ -25,6 +25,10 @@ public class CustomBackpackConfig
 	private string? Description = null;
 	private bool? MaySkipTeleport = null;
 	private float? ItemWeightFactor = null;
+	private Unique? UniqueStatus = null;
+	private string? statusEffect = null;
+
+	private static Dictionary<string, Unique> uniqueMap = new(((Unique[])Enum.GetValues(typeof(Unique))).ToDictionary(u => u.ToString(), u => u), StringComparer.OrdinalIgnoreCase);
 
 	private static Dictionary<string, object?> castDictToStringDict(Dictionary<object, object?> dict) => new(dict.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value), StringComparer.InvariantCultureIgnoreCase);
 
@@ -209,6 +213,37 @@ public class CustomBackpackConfig
 				else
 				{
 					errors.Add($"The weight factor must a decimal number. Got unexpected {backpackDict["weight factor"]?.GetType().ToString() ?? "null"} {errorLocation}");
+				}
+			}
+
+			if (HasKey("unique"))
+			{
+				if (backpackDict["unique"] is string uniqueString)
+				{
+					if (uniqueMap.TryGetValue(uniqueString, out Unique unique))
+					{
+						backpack.UniqueStatus = unique;
+					}
+					else
+					{
+						errors.Add($"The weight factor must be one of {string.Join(", ", uniqueMap.Keys)}. Got unexpected '{uniqueString}' {errorLocation}.");
+					}
+				}
+				else
+				{
+					errors.Add($"The uniqueness must be a string. Got unexpected {backpackDict["unique"]?.GetType().ToString() ?? "null"} {errorLocation}");
+				}
+			}
+
+			if (HasKey("effect"))
+			{
+				if (backpackDict["effect"] is string effectString)
+				{
+					backpack.statusEffect = effectString;
+				}
+				else
+				{
+					errors.Add($"The effect must be a string. Got unexpected {backpackDict["effect"]?.GetType().ToString() ?? "null"} {errorLocation}");
 				}
 			}
 
@@ -624,10 +659,20 @@ public class CustomBackpackConfig
 					}
 
 					string name = item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name;
+					if (kv.Value.statusEffect is null || ObjectDB.instance.GetStatusEffect(kv.Value.statusEffect.GetStableHashCode()) is not { } statusEffect)
+					{
+						statusEffect = null;
+						if (kv.Value.statusEffect is not null)
+						{
+							Debug.LogWarning($"Could not find status effect {kv.Value.statusEffect} while evaluating status effect for custom backpack {kv.Key}");
+						}
+					}
+					item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_equipStatusEffect = statusEffect;
 					CustomBackpack.AllowedItems[name] = allowedItems;
 					CustomBackpack.Sizes[name] = kv.Value.Sizes;
 					CustomBackpack.ItemWeightFactor[name] = kv.Value.ItemWeightFactor;
 					CustomBackpack.MaySkipTeleport[name] = kv.Value.MaySkipTeleport;
+					CustomBackpack.UniqueStatus[name] = kv.Value.UniqueStatus;
 
 					CustomBackpack backpack = item.Prefab.GetComponent<ItemDrop>().m_itemData.Data().GetOrCreate<CustomBackpack>();
 					if (kv.Value.Sizes.Count > 0)

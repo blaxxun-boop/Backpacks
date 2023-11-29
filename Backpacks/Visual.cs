@@ -12,6 +12,37 @@ public class Visual
 {
 	public static readonly Dictionary<VisEquipment, Visual> visuals = new();
 
+	[HarmonyPatch(typeof(Humanoid), nameof(Humanoid.UpdateEquipmentStatusEffects))]
+	private static class ApplyStatusEffects
+	{
+		private static void CollectEffects(Humanoid humanoid, HashSet<StatusEffect?> statusEffects)
+		{
+			if (humanoid is Player player && visuals.TryGetValue(player.m_visEquipment, out Visual visual))
+			{
+				if (visual.equippedBackpackItem?.m_shared.m_equipStatusEffect is { } fingerStatusEffect)
+				{
+					statusEffects.Add(fingerStatusEffect);
+				}
+				if (humanoid.HaveSetEffect(visual.equippedBackpackItem))
+				{
+					statusEffects.Add(visual.equippedBackpackItem!.m_shared.m_equipStatusEffect);
+				}
+			}
+		}
+
+		private static IEnumerable<CodeInstruction> Transpiler(IEnumerable<CodeInstruction> instructionsEnumerable)
+		{
+			List<CodeInstruction> instructions = instructionsEnumerable.ToList();
+			instructions.InsertRange(2, new[]
+			{
+				new CodeInstruction(OpCodes.Ldarg_0),
+				new CodeInstruction(OpCodes.Ldloc_0),
+				new CodeInstruction(OpCodes.Call, AccessTools.DeclaredMethod(typeof(ApplyStatusEffects), nameof(CollectEffects))),
+			});
+			return instructions;
+		}
+	}
+	
 	[HarmonyPatch(typeof(ItemDrop.ItemData), nameof(ItemDrop.ItemData.IsEquipable))]
 	private static class IsEquipable
 	{
@@ -195,13 +226,19 @@ public class Visual
 		{
 			return false;
 		}
+
+		return forceSetBackpackEquipped(hash);
+	}
+	
+	public bool forceSetBackpackEquipped(int hash)
+	{
 		foreach (GameObject backpackItemInstance in backpackItemInstances)
 		{
 			Object.Destroy(backpackItemInstance);
 		}
 		backpackItemInstances.Clear();
 		currentBackpackItemHash = hash;
-		if (hash != 0)
+		if (hash != 0 && Backpacks.hiddenBackpack.Value == Backpacks.Toggle.Off)
 		{
 			backpackItemInstances = visEquipment.AttachArmor(hash);
 		}
@@ -220,5 +257,4 @@ public class Visual
 			zdo.Set("BackpackItem", string.IsNullOrEmpty(name) ? 0 : name.GetStableHashCode());
 		}
 	}
-
 }

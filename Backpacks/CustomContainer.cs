@@ -13,6 +13,7 @@ namespace Backpacks;
 internal static class CustomContainer
 {
 	private static ItemContainer? OpenContainer;
+	private static GameObject containerCloseContainer = null!;
 
 	private static void SaveItemContainer()
 	{
@@ -92,12 +93,13 @@ internal static class CustomContainer
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.CloseContainer)),
 		};
 
-		private static void Prefix(InventoryGui __instance)
+		public static void Prefix(InventoryGui __instance)
 		{
 			if (OpenContainer is { } container)
 			{
 				__instance.m_takeAllButton.gameObject.SetActive(true);
 				__instance.m_stackAllButton.gameObject.SetActive(true);
+				containerCloseContainer.SetActive(false);
 
 				container.Close();
 				container.Inventory.m_onChanged -= SaveItemContainer;
@@ -110,7 +112,7 @@ internal static class CustomContainer
 	[HarmonyPatch(typeof(InventoryGui), nameof(InventoryGui.UpdateContainer))]
 	public class OpenFakeItemsContainer
 	{
-		private static bool Open(InventoryGui invGui, ItemDrop.ItemData? item)
+		public static bool Open(InventoryGui invGui, ItemDrop.ItemData? item)
 		{
 			ItemInfo? itemInfo = item?.Data();
 
@@ -148,6 +150,7 @@ internal static class CustomContainer
 
 				invGui.m_stackAllButton.gameObject.SetActive(OpenContainer.AllowStacking());
 				invGui.m_container.gameObject.SetActive(true);
+				containerCloseContainer.SetActive(true);
 				invGui.m_containerGrid.UpdateInventory(OpenContainer.Inventory, null, invGui.m_dragItem);
 				invGui.m_containerName.text = OpenContainer.GetContainerTitle();
 				if (invGui.m_firstContainerUpdate)
@@ -395,6 +398,32 @@ internal static class CustomContainer
 				fitter.verticalFit = ContentSizeFitter.FitMode.PreferredSize;
 				pressText.SetActive(false);
 			}
+
+			Transform weight = __instance.m_containerWeight.transform.parent;
+			containerCloseContainer = Object.Instantiate(weight.gameObject, weight.parent);
+			containerCloseContainer.transform.localPosition = containerCloseContainer.transform.localPosition with { y = -60 };
+			containerCloseContainer.SetActive(false);
+			containerCloseContainer.transform.SetSiblingIndex(weight.GetSiblingIndex() + 1);
+
+			for (int i = containerCloseContainer.transform.childCount - 1; i >= 0; --i)
+			{
+				Transform child = containerCloseContainer.transform.GetChild(i);
+				if (child.name != "bkg")
+				{
+					Object.Destroy(child.gameObject);
+				}
+			}
+			
+			RectTransform containerCloseButton = Object.Instantiate(__instance.m_tabUpgrade.gameObject, containerCloseContainer.transform).GetComponent<RectTransform>();
+			containerCloseButton.sizeDelta = containerCloseButton.sizeDelta with { x = containerCloseButton.sizeDelta.y };
+			containerCloseButton.Find("Text").GetComponent<TextMeshProUGUI>().text = "X";
+			containerCloseButton.localPosition = new Vector3(2, 0, 0);
+			Button.ButtonClickedEvent buttonClick = new();
+			buttonClick.AddListener(() =>
+			{
+				CloseFakeItemContainer.Prefix(__instance);
+			});
+			containerCloseButton.GetComponent<Button>().onClick = buttonClick;
 		}
 	}
 
