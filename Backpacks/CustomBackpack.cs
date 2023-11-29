@@ -15,7 +15,7 @@ public class CustomBackpack : ItemContainer
 
 	public override bool IgnoresTeleportable() => MaySkipTeleport[Item.m_shared.m_name] ?? base.IgnoresTeleportable();
 	public override float WeightFactor() => ItemWeightFactor[Item.m_shared.m_name] ?? base.WeightFactor();
-	public override bool CanAddItem(ItemDrop.ItemData item) => (AllowedItems[Item.m_shared.m_name].Count == 0 || AllowedItems[Item.m_shared.m_name].Contains(item.m_shared.m_name)) && base.CanAddItem(item);
+	public override bool CanAddItem(ItemDrop.ItemData item) => AllowedItems[Item.m_shared.m_name].Count != 0 ? AllowedItems[Item.m_shared.m_name].Contains(item.m_shared.m_name) && Item != item : base.CanAddItem(item);
 	public override Unique Uniqueness() => UniqueStatus[Item.m_shared.m_name] ?? base.Uniqueness();
 
 	public override void Upgraded()

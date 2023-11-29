@@ -90,6 +90,7 @@ public class ItemContainer : ItemData
 				}
 				++y;
 			}
+			// ReSharper disable once IteratorNeverReturns
 		}
 		IEnumerator<Vector2i> freePositions = enumerate();
 
@@ -148,7 +149,14 @@ public class ItemContainer : ItemData
 #if API
 		return false;
 #else
-		return Backpacks.backpackCeption.Value == Backpacks.Toggle.On ? item != Item : item.m_shared.m_name != Item.m_shared.m_name;
+		return Backpacks.backpackCeption.Value switch
+		{
+			Backpacks.BackpackCeption.Allowed => item != Item,
+			Backpacks.BackpackCeption.NotAllowedSameBackpack => item.m_shared.m_name != Item.m_shared.m_name,
+			Backpacks.BackpackCeption.NotAllowedBackpacks => item.Data().Get<ItemContainer>() is not {} container || (container is not CustomBackpack && container.GetType() != typeof(ItemContainer)),
+			Backpacks.BackpackCeption.NotAllowed => item.Data().Get<ItemContainer>() is null,
+			_ => throw new ArgumentOutOfRangeException(),
+		};
 #endif
 	}
 
