@@ -242,6 +242,12 @@ public class Visual
 		{
 			backpackItemInstances = visEquipment.AttachArmor(hash);
 		}
+
+		if (visEquipment.GetComponent<Player>() is { } player)
+		{
+			API.InvokeEquippedBackpackUpdate(player);
+		}
+
 		return true;
 	}
 

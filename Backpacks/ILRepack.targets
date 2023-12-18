@@ -16,11 +16,4 @@
         </ItemGroup>
         <ILRepack Parallel="true" DebugInfo="true" Internalize="true" InternalizeExclude="@(DoNotInternalizeAssemblies)" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)"/>
     </Target>
-    <Target Name="APIILRepacker" AfterTargets="Build" Condition=" '$(Configuration)|$(Platform)' == 'API|AnyCPU' ">
-        <ItemGroup>
-            <InputAssemblies Include="$(TargetPath)"/>
-            <InputAssemblies Include="$(OutputPath)Libs\ItemDataManager.dll"/>
-        </ItemGroup>
-        <ILRepack Parallel="true" DebugInfo="true" Internalize="false" InputAssemblies="@(InputAssemblies)" OutputFile="$(TargetPath)" TargetKind="SameAsPrimaryAssembly" LibraryPath="$(OutputPath)"/>
-    </Target>
 </Project>

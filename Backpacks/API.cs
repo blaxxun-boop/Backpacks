@@ -1,7 +1,9 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using ItemDataManager;
 using JetBrains.Annotations;
+using UnityEngine;
 
 namespace Backpacks;
 
@@ -91,4 +93,38 @@ public static class API
 		return false;
 #endif
 	}
+
+	public static List<GameObject> GetBackpackVisual(Player player)
+	{
+#if API
+		return new List<GameObject>();
+#else
+		if (Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual))
+		{
+			return visual.backpackItemInstances;
+		}
+
+		return new List<GameObject>();
+#endif
+	}
+	
+	public static ItemDrop.ItemData? GetEquippedBackpack()
+	{
+#if API
+		return null;
+#else
+		if (Player.m_localPlayer && Visual.visuals.TryGetValue(Player.m_localPlayer.m_visEquipment, out Visual visual))
+		{
+			return visual.equippedBackpackItem;
+		}
+
+		return null;
+#endif
+	}
+	
+	public static event Action<Player>? EquippedBackpackUpdate;
+	
+#if ! API
+	internal static void InvokeEquippedBackpackUpdate(Player player) => EquippedBackpackUpdate?.Invoke(player);
+#endif
 }

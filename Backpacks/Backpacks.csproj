@@ -42,6 +42,7 @@
         <DefineConstants>API;TRACE</DefineConstants>
         <ErrorReport>prompt</ErrorReport>
         <WarningLevel>4</WarningLevel>
+        <NoWarn>CS0067</NoWarn>
     </PropertyGroup>
     <Choose>
         <When Condition="($(OS) == 'Unix' OR $(OS) == 'OSX') AND $(GamePath) == ''">

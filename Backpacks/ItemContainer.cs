@@ -59,24 +59,26 @@ public class ItemContainer : ItemData
 #if API
 		return new Vector2i();
 #else
-		return new Vector2i(Backpacks.backpackColumnsByLevel[0], Backpacks.backpackRowsByLevel[0]);
+		return new Vector2i(Backpacks.backpackColumnsByLevel[Math.Min(Backpacks.backpackColumnsByLevel.Count, Item.m_quality) - 1], Backpacks.backpackRowsByLevel[Math.Min(Backpacks.backpackColumnsByLevel.Count, Item.m_quality) - 1]);
 #endif
 	}
 
 #if ! API
 	public override void Upgraded()
 	{
-		Resize(new Vector2i(Backpacks.backpackColumnsByLevel[Math.Min(Backpacks.backpackColumnsByLevel.Count, Item.m_quality) - 1], Backpacks.backpackRowsByLevel[Math.Min(Backpacks.backpackRowsByLevel.Count, Item.m_quality) - 1]));
+		Resize(GetDefaultContainerSize());
 	}
 #endif
 
-	public void Resize(Vector2i dimensions)
+	public bool Resize(Vector2i dimensions)
 	{
-#if ! API
+#if API
+		return false;
+#else
 		int oldSize = Inventory.m_width * Inventory.m_height;
-		if (oldSize > dimensions.x * dimensions.y)
+		if (oldSize - Inventory.GetEmptySlots() > dimensions.x * dimensions.y)
 		{
-			return;
+			return false;
 		}
 
 		IEnumerator<Vector2i> enumerate()
@@ -84,9 +86,12 @@ public class ItemContainer : ItemData
 			int y = 0;
 			while (true)
 			{
-				for (int x = y >= Inventory.m_height ? 0 : Inventory.m_width; x < dimensions.x; ++x)
+				for (int x = 0; x < dimensions.x; ++x)
 				{
-					yield return new Vector2i(x, y);
+					if (Inventory.GetItemAt(x, y) is null)
+					{
+						yield return new Vector2i(x, y);
+					}
 				}
 				++y;
 			}
@@ -106,6 +111,8 @@ public class ItemContainer : ItemData
 		Inventory.m_width = dimensions.x;
 		Inventory.m_height = dimensions.y;
 		Save();
+
+		return true;
 #endif
 	}
 
