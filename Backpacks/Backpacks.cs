@@ -27,6 +27,7 @@ public partial class Backpacks : BaseUnityPlugin
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
 
 	private static ConfigEntry<Toggle> serverConfigLocked = null!;
+	private static ConfigEntry<Toggle> addSlotAzuExtendedPlayerInventory = null!;
 	internal static SyncedConfigEntry<Toggle> useExternalYaml = null!;
 	public static ConfigEntry<Toggle> preventInventoryClosing = null!;
 	private static ConfigEntry<string> backpackRows = null!;
@@ -98,6 +99,7 @@ public partial class Backpacks : BaseUnityPlugin
 
 		serverConfigLocked = config("1 - General", "Lock Configuration", Toggle.On, "If on, the configuration is locked and can be changed by server admins only.");
 		configSync.AddLockingConfigEntry(serverConfigLocked);
+		addSlotAzuExtendedPlayerInventory = config("1 - General", "Add slot in AzuExtendedPlayerInventory", Toggle.On, new ConfigDescription("If on, a Backpack slot will be added to AzuExtendedPlayerInventory, if installed."));
 		useExternalYaml = configSync.AddConfigEntry(Config.Bind("2 - Backpack", "Use External YAML", Toggle.Off, "If set to on, the YAML file from your config folder will be used, to implement custom Backpacks inside of that file."));
 		useExternalYaml.SourceConfig.SettingChanged += (_, _) => ConfigLoader.reloadConfigFile();
 		config("2 - Backpack", "YAML Editor Anchor", 0, new ConfigDescription("Just ignore this.", null, new ConfigurationManagerAttributes { HideSettingName = true, HideDefaultButton = true, CustomDrawer = DrawYamlEditorButton }), false);
@@ -149,7 +151,7 @@ public partial class Backpacks : BaseUnityPlugin
 
 		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
 
-		if (AzuExtendedPlayerInventory.API.IsLoaded())
+		if (addSlotAzuExtendedPlayerInventory.Value == Toggle.On && AzuExtendedPlayerInventory.API.IsLoaded())
 		{
 			AzuExtendedPlayerInventory.API.AddSlot("Backpack", player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
 		}
