@@ -21,7 +21,7 @@ namespace Backpacks;
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.3.3";
+	private const string ModVersion = "1.3.4";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -40,6 +40,7 @@ public partial class Backpacks : BaseUnityPlugin
 	private static ConfigEntry<Toggle> autoOpenBackpack = null!;
 	private static ConfigEntry<string> equipStatusEffect = null!;
 	public static ConfigEntry<Toggle> autoFillBackpacks = null!;
+	private static ConfigEntry<Toggle> backpackSlot = null!;
 
 	public static List<int> backpackRowsByLevel = new();
 	public static List<int> backpackColumnsByLevel = new();
@@ -85,9 +86,9 @@ public partial class Backpacks : BaseUnityPlugin
 
 	public void Awake()
 	{
-		APIManager.Patcher.Patch(new[] { typeof(ItemData).Namespace });
+		APIManager.Patcher.Patch(extraClasses: new[] { typeof(ItemData).FullName });
 		Localizer.Load();
-		configFilePaths = new List<string> { Path.GetDirectoryName(Config.ConfigFilePath), Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location) };
+		configFilePaths = [Path.GetDirectoryName(Config.ConfigFilePath), Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location)];
 
 		Backpack = new Item("bp_explorer", "bp_explorer");
 
@@ -123,6 +124,21 @@ public partial class Backpacks : BaseUnityPlugin
 		equipStatusEffect = config("2 - Backpack", "Equip Status Effect", "", new ConfigDescription("Name of a status effect that should be applied to the player, if the backpack is equipped."));
 		equipStatusEffect.SettingChanged += (_, _) => AddStatusEffectToBackpack.Postfix(ObjectDB.instance);
 		autoFillBackpacks = config("2 - Backpack", "Auto Fill Backpack", Toggle.On, new ConfigDescription("If on, items you pick up are added to your backpack. Conditions apply."), false);
+		if (AzuExtendedPlayerInventory.API.IsLoaded())
+		{
+			backpackSlot = config("2 - Backpack", "Backpack Slot", Toggle.On, new ConfigDescription("If on, there is a dedicated slot for your backpack. Requires AzuExtendedPlayerInventory."));
+			backpackSlot.SettingChanged += (_, _) =>
+			{
+				if (backpackSlot.Value == Toggle.On)
+				{
+					AddBackpackSlot();
+				}
+				else
+				{
+					AzuExtendedPlayerInventory.API.RemoveSlot(Localization.instance.Localize("$bp_backpack_slot_name"));
+				}
+			};
+		}
 
 		ParseBackpackSize();
 
@@ -149,11 +165,13 @@ public partial class Backpacks : BaseUnityPlugin
 
 		Backpack.Prefab.GetComponent<ItemDrop>().m_itemData.Data().Add<ItemContainer>();
 
-		if (AzuExtendedPlayerInventory.API.IsLoaded())
+		if (AzuExtendedPlayerInventory.API.IsLoaded() && backpackSlot.Value == Toggle.On)
 		{
-			AzuExtendedPlayerInventory.API.AddSlot("Backpack", player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
+			AddBackpackSlot();
 		}
 	}
+
+	private static void AddBackpackSlot() => AzuExtendedPlayerInventory.API.AddSlot(Localization.instance.Localize("$bp_backpack_slot_name"), player => Visual.visuals.TryGetValue(player.m_visEquipment, out Visual visual) ? visual.equippedBackpackItem : null, validateBackpack);
 
 	private static bool validateBackpack(ItemDrop.ItemData item) => item.Data().Get<ItemContainer>() is { } backpack && backpack.IsEquipable();
 

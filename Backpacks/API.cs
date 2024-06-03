@@ -10,6 +10,15 @@ namespace Backpacks;
 [PublicAPI]
 public static class API
 {
+	public static bool IsLoaded()
+	{
+#if ! API
+		return true;
+#else
+		return false;
+#endif
+	}
+	
 	public static int CountItemsInBackpacks(Inventory inventory, string name, bool onlyRemoveable = true)
 	{
 		int count = 0;
@@ -31,6 +40,22 @@ public static class API
 		return count;
 	}
 
+	public static bool IsItemInBackpacks(Inventory inventory, string name) => CountItemsInBackpacks(inventory, name) > 0;
+
+	public static bool AddItemToBackpack(ItemDrop.ItemData backpack, ItemDrop.ItemData item)
+	{
+#if API
+		return false;
+#else
+		if (backpack.Data().Get<ItemContainer>() is { } container && container.CanAddItem(item) && container.Inventory.AddItem(item))
+		{
+			container.Save();
+			return true;
+		}
+		return false;
+#endif
+	}
+	
 	public static bool DeleteItemsFromBackpacks(Inventory inventory, string name, int count = 1)
 	{
 #if API
@@ -119,6 +144,38 @@ public static class API
 		}
 
 		return null;
+#endif
+	}
+
+	public static Inventory? GetEquippedBackpackInventory()
+	{
+#if API
+		return null;
+#else
+		if (GetEquippedBackpack() is {} backpack)
+		{
+			return backpack.Data().Get<ItemContainer>()?.Inventory;
+		}
+
+		return null;
+#endif
+	}
+
+	public static List<Inventory> GetAllBackpackInventories(Inventory inventory)
+	{
+		List<Inventory> inventories = new();
+#if API
+		return inventories;
+#else
+		foreach (ItemDrop.ItemData item in inventory.m_inventory)
+		{
+			if (item.Data().Get<ItemContainer>() is { } inv)
+			{
+				inventories.Add(inv.Inventory);
+			}
+		}
+		
+		return inventories;
 #endif
 	}
 	

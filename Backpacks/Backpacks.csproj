@@ -79,7 +79,7 @@
             <HintPath>$(GamePath)\valheim_Data\Managed\publicized_assemblies\assembly_valheim_publicized.dll</HintPath>
         </Reference>
         <Reference Include="AzuExtendedPlayerInventory">
-          <HintPath>Libs\AzuExtendedPlayerInventoryAPI.dll</HintPath>
+            <HintPath>Libs\AzuExtendedPlayerInventoryAPI.dll</HintPath>
         </Reference>
         <Reference Include="BepInEx, Version=5.4.19.0, Culture=neutral, PublicKeyToken=null">
             <HintPath>$(GamePath)\BepInEx\core\BepInEx.dll</HintPath>
@@ -93,6 +93,10 @@
         </Reference>
         <Reference Include="LocalizationManager">
             <HintPath>Libs\LocalizationManager.dll</HintPath>
+        </Reference>
+        <Reference Include="Microsoft.Build.Utilities.v4.0"/>
+        <Reference Include="Mono.Cecil">
+            <HintPath>$(GamePath)\BepInEx\core\Mono.Cecil.dll</HintPath>
         </Reference>
         <Reference Include="ServerSync">
             <HintPath>Libs\ServerSync.dll</HintPath>
@@ -133,10 +137,11 @@
         </Reference>
     </ItemGroup>
     <ItemGroup>
-        <Compile Include="API.cs" />
+        <Compile Include="API.cs"/>
         <Compile Include="ItemContainer.cs"/>
+        <Compile Include="RenameIDM.cs"/>
         <Content Include="Libs\AzuExtendedPlayerInventoryAPI.dll">
-          <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+            <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
         </Content>
         <Content Include="Libs\ItemDataManager.dll">
             <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
@@ -144,7 +149,7 @@
         <Content Include="ILRepack.targets"/>
     </ItemGroup>
     <ItemGroup Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU'">
-        <Compile Include="AutoPickup.cs" />
+        <Compile Include="AutoPickup.cs"/>
         <Compile Include="Backpacks.cs"/>
         <Compile Include="Visual.cs"/>
         <Compile Include="CustomContainer.cs"/>
@@ -189,10 +194,25 @@
     <Target Name="AfterBuild">
     </Target>
     -->
+    <Target Name="CopyPubliziced" BeforeTargets="ILRepacker">
+        <Copy SourceFiles="$(TargetDir)/assembly_guiutils_publicized.dll" DestinationFiles="$(TargetDir)/assembly_guiutils.dll"/>
+        <Copy SourceFiles="$(TargetDir)/assembly_utils_publicized.dll" DestinationFiles="$(TargetDir)/assembly_utils.dll"/>
+        <Copy SourceFiles="$(TargetDir)/assembly_valheim_publicized.dll" DestinationFiles="$(TargetDir)/assembly_valheim.dll"/>
+        <Copy SourceFiles="$(TargetPath)" DestinationFiles="$(TargetDir)/RenamerTask.dll"/>
+    </Target>
+
     <Target Name="Copy" AfterTargets="ILRepack" Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU'">
         <Exec Command="copy /Y &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(GamePath)\BepInEx\plugins\$(AssemblyName).dll&quot;"/>
     </Target>
-    <Target Name="Move" AfterTargets="Build" Condition="'$(Configuration)|$(Platform)' == 'API|AnyCPU'">
+    <Target Name="Move" AfterTargets="ILRepack" Condition="'$(Configuration)|$(Platform)' == 'API|AnyCPU'">
         <Exec Command="move &quot;$(TargetDir)$(AssemblyName).dll&quot; &quot;$(TargetDir)$(AssemblyName)API.dll&quot;"/>
+    </Target>
+
+    <UsingTask AssemblyFile="$(TargetDir)/RenamerTask.dll" TaskName="Backpacks.RenameIDM"/>
+    <Target Name="RenameIDM" AfterTargets="ILRepack" Condition="'$(Configuration)|$(Platform)' != 'API|AnyCPU'">
+        <RenameIDM DLL="$(TargetPath)"/>
+    </Target>
+    <Target Name="RenameIDMAPI" AfterTargets="Move" Condition="'$(Configuration)|$(Platform)' == 'API|AnyCPU'">
+        <RenameIDM DLL="$(TargetDir)$(AssemblyName)API.dll"/>
     </Target>
 </Project>

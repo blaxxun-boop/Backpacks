@@ -28,7 +28,7 @@ public class CustomBackpackConfig
 	private Unique? UniqueStatus = null;
 	private string? statusEffect = null;
 
-	private static Dictionary<string, Unique> uniqueMap = new(((Unique[])Enum.GetValues(typeof(Unique))).ToDictionary(u => u.ToString(), u => u), StringComparer.OrdinalIgnoreCase);
+	private static readonly Dictionary<string, Unique> uniqueMap = new(((Unique[])Enum.GetValues(typeof(Unique))).ToDictionary(u => u.ToString(), u => u), StringComparer.OrdinalIgnoreCase);
 
 	private static Dictionary<string, object?> castDictToStringDict(Dictionary<object, object?> dict) => new(dict.ToDictionary(kv => kv.Key.ToString(), kv => kv.Value), StringComparer.InvariantCultureIgnoreCase);
 
