@@ -21,7 +21,7 @@ namespace Backpacks;
 public partial class Backpacks : BaseUnityPlugin
 {
 	internal const string ModName = "Backpacks";
-	private const string ModVersion = "1.3.4";
+	private const string ModVersion = "1.3.5";
 	private const string ModGUID = "org.bepinex.plugins.backpacks";
 
 	internal static readonly ConfigSync configSync = new(ModName) { DisplayName = ModName, CurrentVersion = ModVersion, MinimumRequiredVersion = ModVersion };
@@ -384,7 +384,7 @@ public partial class Backpacks : BaseUnityPlugin
 	{
 		private static void Postfix(InventoryGui __instance)
 		{
-			if (__instance.m_selectedRecipe.Value is null && __instance.m_selectedRecipe.Key?.m_item?.m_itemData.Data().Get<ItemContainer>() is { } backpack)
+			if (__instance.m_selectedRecipe.ItemData is null && __instance.m_selectedRecipe.Recipe?.m_item?.m_itemData.Data().Get<ItemContainer>() is { } backpack)
 			{
 				bool canAdd = true;
 				PreventMultipleBackpacks.Postfix(Player.m_localPlayer.GetInventory(), backpack.Item, ref canAdd);
