@@ -32,6 +32,7 @@ internal static class CustomContainer
 		private static IEnumerable<MethodInfo> TargetMethods() => new[]
 		{
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnTakeAll)),
+			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnStackAll)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.OnSelectedItem)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.IsContainerOpen)),
 			AccessTools.DeclaredMethod(typeof(InventoryGui), nameof(InventoryGui.UpdateContainerWeight)),

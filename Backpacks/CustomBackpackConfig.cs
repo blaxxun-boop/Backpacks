@@ -7,6 +7,7 @@ using BepInEx.Configuration;
 using HarmonyLib;
 using ItemDataManager;
 using ItemManager;
+using LocalizationManager;
 using ServerSync;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -558,6 +559,7 @@ public class CustomBackpackConfig
 				{
 					activeBackpacks.Add(kv.Key);
 
+					string localizeSuffix(Item item) => item.Prefab.name.Replace(" ", "_");
 					if (!loadedBackpacks.TryGetValue(kv.Key, out Item item))
 					{
 						if (ZNetScene.instance.GetPrefab(kv.Key))
@@ -571,11 +573,11 @@ public class CustomBackpackConfig
 							Configurable = Configurability.Disabled,
 							Prefab = { name = new string(kv.Key.Where(c => c is not ' ' and not '/' and not '(' and not ')').ToArray()) },
 						};
-						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name = kv.Key;
-						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_description = "";
-						_ = item.Name; // init name
+						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_name = $"$item_{localizeSuffix(item)}";
+						item.Prefab.GetComponent<ItemDrop>().m_itemData.m_shared.m_description = $"$itemdesc_{localizeSuffix(item)}";
+						Localizer.AddText($"item_{localizeSuffix(item)}", kv.Key);
 					}
-					item.Description.English(kv.Value.Description ?? "A random backpack.");
+					Localizer.AddText($"itemdesc_{localizeSuffix(item)}", kv.Value.Description ?? "A random backpack.");
 
 					foreach (SkinnedMeshRenderer renderer in item.Prefab.transform.Find("attach_skin/Mesh").GetComponentsInChildren<SkinnedMeshRenderer>(true))
 					{
