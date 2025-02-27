@@ -250,7 +250,7 @@ public partial class Backpacks : BaseUnityPlugin
 	{
 		private static IEnumerable<MethodInfo> TargetMethods() => typeof(Inventory).GetMethods().Where(m => m.Name == nameof(Inventory.MoveItemToThis));
 
-		private static bool Prefix(Inventory __instance, ItemDrop.ItemData item)
+		public static bool Prefix(Inventory __instance, ItemDrop.ItemData item)
 		{
 			if (__instance == InventoryGui.instance.m_currentContainer?.m_inventory && item.Data().Get<ItemContainer>()?.CanBePutInContainer() == false)
 			{
@@ -258,6 +258,48 @@ public partial class Backpacks : BaseUnityPlugin
 				return false;
 			}
 
+			return true;
+		}
+	}
+	
+	
+	[HarmonyPatch(typeof(InventoryGrid), nameof(InventoryGrid.DropItem), typeof(Inventory), typeof(ItemDrop.ItemData), typeof(int), typeof(Vector2i))]
+	private static class PreventSwapBackpackWithItem
+	{
+		/**
+		 * Listener for when the player selects an item in their mouse cursor and moves it by clicking another
+		 * slot in a container. This can trigger two items to swap, which we need to intercept to fully abort
+		 * the transaction
+		 */
+		[HarmonyPriority(Priority.Low)]
+		private static bool Prefix(InventoryGrid __instance, Inventory fromInventory, ItemDrop.ItemData item, int amount, Vector2i pos)
+		{
+			// The second item in the operation ie the destination item
+			ItemDrop.ItemData itemAt = __instance.m_inventory.GetItemAt(pos.x, pos.y);
+			
+			// If there's nothing at the destination, we'll let other handlers run instead
+			if (itemAt == null)
+				return true;
+			
+			// If the item is moved onto itself, that's fine
+			if (itemAt == item)
+				return true;
+
+			// If the item has not changed containers, that's also fine
+			if (__instance.m_inventory == fromInventory)
+				return true;
+
+			// To clarify, itemFrom is the first item clicked. ItemAt is the second item clicked.
+			ItemDrop.ItemData itemFrom = item;
+			
+			// We are swapping itemFrom with itemAt, so check the whole transaction is allowed first.
+			// If either will fail, we return false and prevent the whole operation.
+			if (PreventBackpacksInChests.Prefix(__instance.m_inventory, itemFrom))
+				return false;
+
+			if (PreventBackpacksInChests.Prefix(__instance.m_inventory, itemAt))
+				return false;
+			
 			return true;
 		}
 	}
